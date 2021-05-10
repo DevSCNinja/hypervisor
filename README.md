@@ -1,22 +1,15 @@
-## Alpha Vaults
+## Hypervisor
 
-This repository contains the smart contracts for the Alpha Vaults protocol.
+Visor Hypervisor Active liquiditiy management contract.
 
-### Usage
+### Testing
 
-Before compiling, run below. The uniswap-v3-periphery has to be cloned otherwise
-the naming in Brownie clashes with uniswap-v3-core.
+`npx hardhat test`
 
-`brownie pm clone Uniswap/uniswap-v3-periphery@1.0.0`
+To deploy, modify the parameters in `scripts/deploy_mainnet.sh` and run:
 
-Run tests
-
-`brownie test`
-
-To deploy, modify the parameters in `scripts/deploy_mainnet.py` and run:
-
-`brownie run deploy_mainnet`
+`npx hardhat deploy_mainnet`
 
 To trigger a rebalance, run:
 
-`brownie run rebalance`
+`npx hardhat rebalance`

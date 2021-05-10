@@ -12,3 +12,7 @@ OpenZeppelin/
 Uniswap/
 
 flat.sol
+
+typechain
+artifacts
+cache
