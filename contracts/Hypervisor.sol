@@ -92,7 +92,7 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
     constructor(
         address _pool,
         address _owner
-    ) ERC20("Alpha Vault", "AV") {
+    ) ERC20("Fungible Liquidity", "LIQ") {
         pool = IUniswapV3Pool(_pool);
         token0 = IERC20(pool.token0());
         token1 = IERC20(pool.token1());
