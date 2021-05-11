@@ -73,9 +73,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
     int24 public limitUpper;
 
     address public owner;
-    address public governance;
-    address public pendingGovernance;
-    address public keeper;
     uint256 public lastUpdate;
 
     /**
@@ -104,7 +101,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
         twapDuration = 0;
         rebalanceCooldown = 3600;
         maxTotalSupply = 1e17;
-        governance = msg.sender;
         owner = _owner;
 
         int24 mid = _mid();
@@ -233,8 +229,7 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
      * current price deviates too much from the TWAP, or if current price is
      * too close to boundary.
      */
-    function rebalance(int24 lowerTick, int24 upperTick) external override nonReentrant {
-        require(keeper == address(0) || msg.sender == keeper, "keeper");
+    function rebalance(int24 lowerTick, int24 upperTick) external override nonReentrant onlyOwner {
         require(block.timestamp >= lastUpdate.add(rebalanceCooldown), "cooldown");
         lastUpdate = block.timestamp;
 
@@ -550,56 +545,12 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
         return int24((tickCumulatives[1] - tickCumulatives[0]) / _twapDuration);
     }
 
-    function setBaseThreshold(int24 _baseThreshold) external onlyGovernance {
-        _checkThreshold(_baseThreshold);
-        baseThreshold = _baseThreshold;
-    }
-
-    function setLimitThreshold(int24 _limitThreshold) external onlyGovernance {
-        _checkThreshold(_limitThreshold);
-        limitThreshold = _limitThreshold;
-    }
-
-    function setMaxTwapDeviation(int24 _maxTwapDeviation) external onlyGovernance {
-        require(_maxTwapDeviation >= 0, "maxTwapDeviation");
-        maxTwapDeviation = _maxTwapDeviation;
-    }
-
-    function setTwapDuration(uint32 _twapDuration) external onlyGovernance {
-        twapDuration = _twapDuration;
-    }
-
-    function setRebalanceCooldown(uint256 _rebalanceCooldown) external onlyGovernance {
-        rebalanceCooldown = _rebalanceCooldown;
-    }
-
-    function setMaxTotalSupply(uint256 _maxTotalSupply) external onlyGovernance {
+    function setMaxTotalSupply(uint256 _maxTotalSupply) external onlyOwner {
         maxTotalSupply = _maxTotalSupply;
     }
 
-    function setKeeper(address _keeper) external onlyGovernance {
-        keeper = _keeper;
-    }
-
-    /**
-     * @notice Governance address is not updated until the new governance
-     * address has called acceptGovernance() to accept this responsibility.
-     */
-    function setGovernance(address _governance) external onlyGovernance {
-        pendingGovernance = _governance;
-    }
-
-    /**
-     * @notice setGovernance() should be called by the existing governance
-     * address prior to calling this function.
-     */
-    function acceptGovernance() external {
-        require(msg.sender == pendingGovernance, "pendingGovernance");
-        governance = msg.sender;
-    }
-
-    modifier onlyGovernance {
-        require(msg.sender == governance, "governance");
+    modifier onlyOwner {
+        require(msg.sender == owner, "only owner");
         _;
     }
 }
