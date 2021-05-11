@@ -75,7 +75,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
     address public owner;
     address public governance;
     address public pendingGovernance;
-    bool public finalized;
     address public keeper;
     uint256 public lastUpdate;
 
@@ -127,6 +126,7 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
      * @return amount0 Amount of token0 paid by sender
      * @return amount1 Amount of token1 paid by sender
      */
+    // TODO allow users to lock assets in vault here
     function deposit(
         uint256 shares,
         uint256 amount0Max,
@@ -490,6 +490,7 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
             );
     }
 
+    /// TODO we're not going to use this
     /// @dev Revert if current price is too close to min or max ticks allowed
     /// by Uniswap, or if it deviates too much from the TWAP. Should be called
     /// whenever base and limit ranges are updated. In practice, prices should
@@ -506,6 +507,7 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
         require(deviation <= maxTwapDeviation, "maxTwapDeviation");
     }
 
+    /// TODO we're not going to use this
     function _checkThreshold(int24 threshold) internal view {
         require(threshold % tickSpacing == 0, "threshold not tick multiple");
         require(threshold < TickMath.MAX_TICK, "threshold too high");
@@ -577,36 +579,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
 
     function setKeeper(address _keeper) external onlyGovernance {
         keeper = _keeper;
-    }
-
-    /**
-     * @notice Renounce emergency powers.
-     */
-    function finalize() external onlyGovernance {
-        finalized = true;
-    }
-
-    /**
-     * @notice Transfer tokens to governance in case of emergency. Cannot be
-     * called if already finalized.
-     */
-    function emergencyWithdraw(IERC20 token, uint256 amount) external onlyGovernance {
-        require(!finalized, "finalized");
-        token.safeTransfer(msg.sender, amount);
-    }
-
-    /**
-     * @notice Burn liquidity and transfer tokens to governance in case of
-     * emergency. Cannot be called if already finalized.
-     */
-    function emergencyBurn(
-        int24 tickLower,
-        int24 tickUpper,
-        uint128 liquidity
-    ) external onlyGovernance {
-        require(!finalized, "finalized");
-        pool.burn(tickLower, tickUpper, liquidity);
-        pool.collect(msg.sender, tickLower, tickUpper, type(uint128).max, type(uint128).max);
     }
 
     /**
