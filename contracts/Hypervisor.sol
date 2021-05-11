@@ -47,7 +47,7 @@ import "../interfaces/IVault.sol";
  *          limit order is placed only one side of the current price so that
  *          the other token which it holds more of is used up.
  */
-contract PassiveRebalanceVault is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
+contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
@@ -72,6 +72,7 @@ contract PassiveRebalanceVault is IVault, IUniswapV3MintCallback, ERC20, Reentra
     int24 public limitLower;
     int24 public limitUpper;
 
+    address public owner;
     address public governance;
     address public pendingGovernance;
     bool public finalized;
@@ -80,21 +81,17 @@ contract PassiveRebalanceVault is IVault, IUniswapV3MintCallback, ERC20, Reentra
 
     /**
      * @param _pool Underlying Uniswap V3 pool
-     * @param _baseThreshold Used to determine base range
-     * @param _limitThreshold Used to determine limit range
-     * @param _maxTwapDeviation Max deviation from TWAP during rebalance
-     * @param _twapDuration TWAP duration in seconds for rebalance check
-     * @param _rebalanceCooldown Min time between rebalance() calls in seconds
-     * @param _maxTotalSupply Pause deposits if total supply exceeds this
+     * @param _owner The owner of the Hypervisor Contract
+     * _baseThreshold Used to determine base range
+     * _limitThreshold Used to determine limit range
+     * _maxTwapDeviation Max deviation from TWAP during rebalance
+     * _twapDuration TWAP duration in seconds for rebalance check
+     * _rebalanceCooldown Min time between rebalance() calls in seconds
+     * _maxTotalSupply Pause deposits if total supply exceeds this
      */
     constructor(
         address _pool,
-        int24 _baseThreshold,
-        int24 _limitThreshold,
-        int24 _maxTwapDeviation,
-        uint32 _twapDuration,
-        uint256 _rebalanceCooldown,
-        uint256 _maxTotalSupply
+        address _owner
     ) ERC20("Alpha Vault", "AV") {
         pool = IUniswapV3Pool(_pool);
         token0 = IERC20(pool.token0());
@@ -102,19 +99,20 @@ contract PassiveRebalanceVault is IVault, IUniswapV3MintCallback, ERC20, Reentra
         fee = pool.fee();
         tickSpacing = pool.tickSpacing();
 
-        baseThreshold = _baseThreshold;
-        limitThreshold = _limitThreshold;
-        maxTwapDeviation = _maxTwapDeviation;
-        twapDuration = _twapDuration;
-        rebalanceCooldown = _rebalanceCooldown;
-        maxTotalSupply = _maxTotalSupply;
+        baseThreshold = 1800;
+        limitThreshold = 600;
+        maxTwapDeviation = 100;
+        twapDuration = 0;
+        rebalanceCooldown = 3600;
+        maxTotalSupply = 1e17;
         governance = msg.sender;
+        owner = _owner;
 
         int24 mid = _mid();
         _checkMid(mid);
-        _checkThreshold(_baseThreshold);
-        _checkThreshold(_limitThreshold);
-        require(_maxTwapDeviation >= 0, "maxTwapDeviation");
+        _checkThreshold(baseThreshold);
+        _checkThreshold(limitThreshold);
+        require(maxTwapDeviation >= 0, "maxTwapDeviation");
 
         (baseLower, baseUpper) = _baseRange(mid);
         (limitLower, limitUpper) = _bidRange(mid);
@@ -235,7 +233,7 @@ contract PassiveRebalanceVault is IVault, IUniswapV3MintCallback, ERC20, Reentra
      * current price deviates too much from the TWAP, or if current price is
      * too close to boundary.
      */
-    function rebalance() external override nonReentrant {
+    function rebalance(int24 lowerTick, int24 upperTick) external override nonReentrant {
         require(keeper == address(0) || msg.sender == keeper, "keeper");
         require(block.timestamp >= lastUpdate.add(rebalanceCooldown), "cooldown");
         lastUpdate = block.timestamp;
