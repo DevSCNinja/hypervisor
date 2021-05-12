@@ -60,11 +60,14 @@ describe('Hypervisor', () => {
         await token0.connect(alice).approve(hypervisor.address, ethers.utils.parseEther('1000000'))
         await token1.connect(alice).approve(hypervisor.address, ethers.utils.parseEther('1000000'))
         await hypervisor.connect(alice).deposit(100000000000, ethers.utils.parseEther('1000'), ethers.utils.parseEther('1000'), alice.address)
-        const token0Liq = await token0.balanceOf(poolAddress)
-        const token1Liq = await token1.balanceOf(poolAddress)
+        let token0Liq = await token0.balanceOf(poolAddress)
+        let token1Liq = await token1.balanceOf(poolAddress)
         console.log("token0Liq: " + token0Liq.toString() + "\ntoken1Liq: " + token1Liq.toString())
         // test withdrawal of liquidity
         await hypervisor.connect(alice).withdraw(100000000000, alice.address);
+        token0Liq = await token0.balanceOf(poolAddress)
+        token1Liq = await token1.balanceOf(poolAddress)
+        console.log("token0Liq: " + token0Liq.toString() + "\ntoken1Liq: " + token1Liq.toString())
         // check tokens into uniswapV3pool after Alice deposit
         //expect(await token0.balanceOf(poolAddress)).to.equal(ethers.utils.parseEther('1000'))
         //expect(await token1.balanceOf(poolAddress)).to.equal(ethers.utils.parseEther('1000'))
