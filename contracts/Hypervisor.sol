@@ -161,16 +161,12 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
     /**
      * @notice Withdraw tokens in proportion to the vault's holdings.
      * @param shares Shares burned by sender
-     * @param amount0Min Revert if resulting amount0 is smaller than this
-     * @param amount1Min Revert if resulting amount1 is smaller than this
      * @param to Recipient of tokens
      * @return amount0 Amount of token0 sent to recipient
      * @return amount1 Amount of token1 sent to recipient
      */
     function withdraw(
         uint256 shares,
-        uint256 amount0Min,
-        uint256 amount1Min,
         address to
     ) external override nonReentrant returns (uint256 amount0, uint256 amount1) {
         require(shares > 0, "shares");
@@ -199,8 +195,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
         // Burn shares
         _burn(msg.sender, shares);
 
-        require(amount0 >= amount0Min, "amount0Min");
-        require(amount1 >= amount1Min, "amount1Min");
         emit Withdraw(msg.sender, to, shares, amount0, amount1);
     }
 
