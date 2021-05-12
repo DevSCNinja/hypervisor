@@ -59,8 +59,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
     uint24 public fee;
     int24 public tickSpacing;
 
-    int24 public baseThreshold;
-    int24 public limitThreshold;
     uint256 public maxTotalSupply;
 
     int24 public baseLower;
@@ -73,13 +71,15 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
     /**
      * @param _pool Underlying Uniswap V3 pool
      * @param _owner The owner of the Hypervisor Contract
-     * _baseThreshold Used to determine base range
-     * _limitThreshold Used to determine limit range
      * _maxTotalSupply Pause deposits if total supply exceeds this
      */
     constructor(
         address _pool,
-        address _owner
+        address _owner,
+        int24 _baseLower,
+        int24 _baseUpper,
+        int24 _limitLower,
+        int24 _limitUpper
     ) ERC20("Fungible Liquidity", "LIQ") {
         pool = IUniswapV3Pool(_pool);
         token0 = IERC20(pool.token0());
@@ -87,15 +87,15 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
         fee = pool.fee();
         tickSpacing = pool.tickSpacing();
 
-        baseThreshold = 1800;
-        limitThreshold = 600;
         maxTotalSupply = 1e17;
         owner = _owner;
 
         int24 mid = _mid();
 
-        (baseLower, baseUpper) = _baseRange(mid);
-        (limitLower, limitUpper) = _bidRange(mid);
+        baseLower =  _baseLower;
+        baseUpper =  _baseUpper;
+        limitLower =  _limitLower;
+        limitUpper =  _limitUpper;
     }
 
     /**
@@ -325,27 +325,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
         uint256 balance0 = token0.balanceOf(address(this));
         uint256 balance1 = token1.balanceOf(address(this));
         return _liquidityForAmounts(tickLower, tickUpper, balance0, balance1);
-    }
-
-    /// @dev Return lower and upper ticks for the base order. This order is
-    /// roughly symmetric around the mid price.
-    function _baseRange(int24 mid) internal view returns (int24, int24) {
-        int24 midFloor = _floor(mid);
-        return (midFloor - baseThreshold, midFloor + tickSpacing + baseThreshold);
-    }
-
-    /// @dev Return lower and upper ticks for the bid limit order. This order
-    /// sits just below the mid price and helps rebalance closer to 50/50.
-    function _bidRange(int24 mid) internal view returns (int24, int24) {
-        int24 midFloor = _floor(mid);
-        return (midFloor - limitThreshold, midFloor);
-    }
-
-    /// @dev Return lower and upper ticks for the ask limit order. This order
-    /// sits just above the mid price and helps rebalance closer to 50/50.
-    function _askRange(int24 mid) internal view returns (int24, int24) {
-        int24 midCeil = _floor(mid) + tickSpacing;
-        return (midCeil, midCeil + limitThreshold);
     }
 
     /// @dev Callback for Uniswap V3 pool.

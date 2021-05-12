@@ -46,7 +46,7 @@ describe('Hypervisor', () => {
     })
 
     it('deposit', async () => {
-        await hypervisorFactory.createHypervisor(token0.address, token1.address, FeeAmount.MEDIUM)
+        await hypervisorFactory.createHypervisor(token0.address, token1.address, FeeAmount.MEDIUM,-1800, 1860, -600, 0)
         const hypervisorAddress = await hypervisorFactory.getHypervisor(token0.address, token1.address, FeeAmount.MEDIUM)
         hypervisor = (await ethers.getContractAt('Hypervisor', hypervisorAddress)) as Hypervisor
 
@@ -63,6 +63,19 @@ describe('Hypervisor', () => {
         let token0Liq = await token0.balanceOf(poolAddress)
         let token1Liq = await token1.balanceOf(poolAddress)
         console.log("token0Liq: " + token0Liq.toString() + "\ntoken1Liq: " + token1Liq.toString())
+        // what are positions initialized as?
+        let baseLower = await hypervisor.baseLower()
+        let baseUpper = await hypervisor.baseUpper()
+        console.log("baseLower: " + baseLower.toString() + "\nbaseUpper: " + baseUpper.toString())
+
+        let limitLower = await hypervisor.limitLower()
+        let limitUpper = await hypervisor.limitUpper()
+        console.log("limitLower: " + limitLower.toString() + "\nlimitUpper: " + limitUpper.toString())
+
+        //const { _liquidity : liquidityHypervisor } = await uniswapPool.positions(
+        //    getPositionKey(hypervisor.address, -887220, 887220)
+        //)
+
         // test withdrawal of liquidity
         await hypervisor.connect(alice).withdraw(100000000000, alice.address);
         token0Liq = await token0.balanceOf(poolAddress)
