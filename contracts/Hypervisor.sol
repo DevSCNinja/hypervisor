@@ -62,8 +62,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
 
     int24 public baseThreshold;
     int24 public limitThreshold;
-    int24 public maxTwapDeviation;
-    uint32 public twapDuration;
     uint256 public rebalanceCooldown;
     uint256 public maxTotalSupply;
 
@@ -80,8 +78,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
      * @param _owner The owner of the Hypervisor Contract
      * _baseThreshold Used to determine base range
      * _limitThreshold Used to determine limit range
-     * _maxTwapDeviation Max deviation from TWAP during rebalance
-     * _twapDuration TWAP duration in seconds for rebalance check
      * _rebalanceCooldown Min time between rebalance() calls in seconds
      * _maxTotalSupply Pause deposits if total supply exceeds this
      */
@@ -97,17 +93,11 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
 
         baseThreshold = 1800;
         limitThreshold = 600;
-        maxTwapDeviation = 100;
-        twapDuration = 0;
         rebalanceCooldown = 3600;
         maxTotalSupply = 1e17;
         owner = _owner;
 
         int24 mid = _mid();
-        _checkMid(mid);
-        _checkThreshold(baseThreshold);
-        _checkThreshold(limitThreshold);
-        require(maxTwapDeviation >= 0, "maxTwapDeviation");
 
         (baseLower, baseUpper) = _baseRange(mid);
         (limitLower, limitUpper) = _bidRange(mid);
@@ -224,17 +214,13 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
     }
 
     /**
-     * @notice Update vault's positions depending on how the price has moved.
-     * Reverts if cooldown period after last rebalance hasn't elapsed, or if
-     * current price deviates too much from the TWAP, or if current price is
-     * too close to boundary.
+     * @notice Update vault's positions arbitrarily
      */
     function rebalance(int24 lowerTick, int24 upperTick) external override nonReentrant onlyOwner {
         require(block.timestamp >= lastUpdate.add(rebalanceCooldown), "cooldown");
         lastUpdate = block.timestamp;
 
         int24 mid = _mid();
-        _checkMid(mid);
 
         // Withdraw all liquidity and collect all fees from Uniswap pool
         uint128 basePosition = _position(baseLower, baseUpper);
@@ -485,30 +471,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
             );
     }
 
-    /// TODO we're not going to use this
-    /// @dev Revert if current price is too close to min or max ticks allowed
-    /// by Uniswap, or if it deviates too much from the TWAP. Should be called
-    /// whenever base and limit ranges are updated. In practice, prices should
-    /// only become this extreme if there's no liquidity in the Uniswap pool.
-    function _checkMid(int24 mid) internal view {
-        int24 maxThreshold = baseThreshold > limitThreshold ? baseThreshold : limitThreshold;
-        require(mid > TickMath.MIN_TICK + maxThreshold + tickSpacing, "price too low");
-        require(mid < TickMath.MAX_TICK - maxThreshold - tickSpacing, "price too high");
-
-        // Check TWAP deviation. This check prevents price manipulation before
-        // the rebalance and also avoids rebalancing when price has just spiked.
-        int24 twap = getTwap();
-        int24 deviation = mid > twap ? mid - twap : twap - mid;
-        require(deviation <= maxTwapDeviation, "maxTwapDeviation");
-    }
-
-    /// TODO we're not going to use this
-    function _checkThreshold(int24 threshold) internal view {
-        require(threshold % tickSpacing == 0, "threshold not tick multiple");
-        require(threshold < TickMath.MAX_TICK, "threshold too high");
-        require(threshold > 0, "threshold not positive");
-    }
-
     /// @dev Round tick down towards negative infinity so that it is a multiple
     /// of `tickSpacing`.
     function _floor(int24 tick) internal view returns (int24) {
@@ -525,24 +487,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
     function _uint128Safe(uint256 x) internal pure returns (uint128) {
         assert(x <= type(uint128).max);
         return uint128(x);
-    }
-
-    /**
-     * @notice Fetch TWAP from Uniswap V3 pool. If `twapDuration` is 0, returns
-     * current price.
-     */
-    function getTwap() public view returns (int24) {
-        uint32 _twapDuration = twapDuration;
-        if (_twapDuration == 0) {
-            return _mid();
-        }
-
-        uint32[] memory secondsAgo = new uint32[](2);
-        secondsAgo[0] = _twapDuration;
-        secondsAgo[1] = 0;
-
-        (int56[] memory tickCumulatives, ) = pool.observe(secondsAgo);
-        return int24((tickCumulatives[1] - tickCumulatives[0]) / _twapDuration);
     }
 
     function setMaxTotalSupply(uint256 _maxTotalSupply) external onlyOwner {
