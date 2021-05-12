@@ -59,10 +59,12 @@ describe('Hypervisor', () => {
 
         await token0.connect(alice).approve(hypervisor.address, ethers.utils.parseEther('1000000'))
         await token1.connect(alice).approve(hypervisor.address, ethers.utils.parseEther('1000000'))
-        await hypervisor.connect(alice).deposit(10000, ethers.utils.parseEther('1000'), ethers.utils.parseEther('1000'), alice.address)
+        await hypervisor.connect(alice).deposit(100000000000, ethers.utils.parseEther('1000'), ethers.utils.parseEther('1000'), alice.address)
         const token0Liq = await token0.balanceOf(poolAddress)
         const token1Liq = await token1.balanceOf(poolAddress)
         console.log("token0Liq: " + token0Liq.toString() + "\ntoken1Liq: " + token1Liq.toString())
+        // test withdrawal of liquidity
+        await hypervisor.connect(alice).withdraw(100000000000, 0, 0, alice.address);
         // check tokens into uniswapV3pool after Alice deposit
         //expect(await token0.balanceOf(poolAddress)).to.equal(ethers.utils.parseEther('1000'))
         //expect(await token1.balanceOf(poolAddress)).to.equal(ethers.utils.parseEther('1000'))
@@ -80,127 +82,4 @@ describe('Hypervisor', () => {
         //// check Alice hypervisorLP tokens
         //expect(await hypervisor.balanceOf(alice.address)).to.equal(ethers.utils.parseEther('1000.000000000000000054'))
     })
-
-    /*
-    describe('after deposit', () => {
-        beforeEach('alice deposit tokens into hypervisor', async () => {
-            await hypervisorFactory.createHypervisor(token0.address, token1.address, FeeAmount.MEDIUM)
-            const hypervisorAddress = await hypervisorFactory.getHypervisor(token0.address, token1.address, FeeAmount.MEDIUM)
-            hypervisor = (await ethers.getContractAt('Hypervisor', hypervisorAddress)) as Hypervisor
-
-            const poolAddress = await factory.getPool(token0.address, token1.address, FeeAmount.MEDIUM)
-            uniswapPool = (await ethers.getContractAt('IUniswapV3Pool', poolAddress)) as IUniswapV3Pool
-            await uniswapPool.initialize(encodePriceSqrt('1', '1'))
-
-            await token0.mint(alice.address, ethers.utils.parseEther('1000000'))
-            await token1.mint(alice.address, ethers.utils.parseEther('1000000'))
-
-            await token0.connect(alice).approve(hypervisor.address, ethers.utils.parseEther('1000000'))
-            await token1.connect(alice).approve(hypervisor.address, ethers.utils.parseEther('1000000'))
-            await hypervisor.connect(alice).deposit(ethers.utils.parseEther('1000'), ethers.utils.parseEther('1000'))
-        })
-
-        it('alice can add liquidity to existing position', async () => {
-            await hypervisor.connect(alice).deposit(ethers.utils.parseEther('500'), ethers.utils.parseEther('500'))
-
-            // check tokens into uniswapV3pool after Alice deposit
-            expect(await token0.balanceOf(uniswapPool.address)).to.equal(ethers.utils.parseEther('1500'))
-            expect(await token1.balanceOf(uniswapPool.address)).to.equal(ethers.utils.parseEther('1500'))
-            // check hypervisor's liquidity info after Alice deposit
-            const { _liquidity : liquidityHypervisor } = await uniswapPool.positions(
-                getPositionKey(hypervisor.address, -887220, 887220)
-            )
-            expect(liquidityHypervisor).to.equal(ethers.utils.parseEther('1500.000000000000000081'))
-            // check that Alice liquidity info is empty
-            const { _liquidity : liquidityAlice } = await uniswapPool.positions(
-                getPositionKey(alice.address, -887220, 887220)
-            )
-            expect(liquidityAlice).to.equal(ethers.utils.parseEther('0'))
-            // check Alice hypervisorLP tokens
-            expect(await hypervisor.balanceOf(alice.address)).to.equal(ethers.utils.parseEther('1500.000000000000000081'))
-        })
-
-        it('alice can withdraw part of liquidity', async () => {
-            await hypervisor.connect(alice).withdraw(ethers.utils.parseEther('500'))
-
-            // check tokens into uniswapV3pool after Alice withdraw
-            expect(await token0.balanceOf(uniswapPool.address)).to.equal(ethers.utils.parseEther('500.000000000000000028'))
-            expect(await token1.balanceOf(uniswapPool.address)).to.equal(ethers.utils.parseEther('500.000000000000000028'))
-            // check Alice balance after Alice withdraw
-            expect(await token0.balanceOf(alice.address)).to.equal(ethers.utils.parseEther('999499.999999999999999972'))
-            expect(await token1.balanceOf(alice.address)).to.equal(ethers.utils.parseEther('999499.999999999999999972'))
-            // check hypervisor's liquidity info after Alice withdraw
-            const { _liquidity } = await uniswapPool.positions(
-                getPositionKey(hypervisor.address, -887220, 887220)
-            )
-            expect(_liquidity).to.equal(ethers.utils.parseEther('500.000000000000000054'))
-            // check Alice hypervisorLP tokens
-            expect(await hypervisor.balanceOf(alice.address)).to.equal(ethers.utils.parseEther('500.000000000000000054'))
-        })
-
-        it('alice can withdraw all liquidity', async () => {
-            await hypervisor.connect(alice).withdraw(ethers.utils.parseEther('1000.000000000000000054'))
-
-            // check tokens into uniswapV3pool after Alice withdraw
-            expect(await token0.balanceOf(uniswapPool.address)).to.equal(ethers.utils.parseEther('0.000000000000000001'))
-            expect(await token1.balanceOf(uniswapPool.address)).to.equal(ethers.utils.parseEther('0.000000000000000001'))
-            // check Alice balance after Alice withdraw
-            expect(await token0.balanceOf(alice.address)).to.equal(ethers.utils.parseEther('999999.999999999999999999'))
-            expect(await token1.balanceOf(alice.address)).to.equal(ethers.utils.parseEther('999999.999999999999999999'))
-            // check hypervisor's liquidity info after Alice withdraw
-            const { _liquidity } = await uniswapPool.positions(
-                getPositionKey(hypervisor.address, -887220, 887220)
-            )
-            expect(_liquidity).to.equal(ethers.utils.parseEther('0'))
-            // check Alice hypervisorLP tokens
-            expect(await hypervisor.balanceOf(alice.address)).to.equal(ethers.utils.parseEther('0'))
-        })
-
-        it('test rebalance', async () => {
-            await hypervisor.rebalance(-443580, 443580)
-            await hypervisor.connect(alice).deposit(ethers.utils.parseEther('1000'), ethers.utils.parseEther('1000'))
-            const { _liquidity } = await uniswapPool.positions(
-                getPositionKey(hypervisor.address, -443580, 443580)
-            )
-            expect(_liquidity).to.equal(ethers.utils.parseEther('2000.000000466975676997'))
-        })
-
-
-        describe('connect Bob\'s wallet', () => {
-            beforeEach('create Bob\'s balance', async () => {
-                await token0.mint(bob.address, ethers.utils.parseEther('1000000'))
-                await token1.mint(bob.address, ethers.utils.parseEther('1000000'))
-
-                await token0.connect(bob).approve(router.address, ethers.utils.parseEther('1000000'))
-                await token1.connect(bob).approve(router.address, ethers.utils.parseEther('1000000'))
-            })
-
-            it('test swap', async () => {
-                await hypervisor.rebalance(-443580, 443580)
-                await router.connect(bob).exactInputSingle({
-                    tokenIn: token0.address,
-                    tokenOut: token1.address,
-                    fee: 3000,
-                    recipient: bob.address,
-                    deadline: 2000000000, // Wed May 18 2033 03:33:20 GMT+0000
-                    amountIn:ethers.utils.parseEther('600'),
-                    amountOutMinimum:ethers.utils.parseEther('200'),
-                    sqrtPriceLimitX96: 0,
-                })
-                const bobBalance0 = await token0.balanceOf(bob.address)
-                const bobBalance1 = await token1.balanceOf(bob.address)
-                const poolBalance0 = await token0.balanceOf(uniswapPool.address)
-                const poolBalance1 = await token1.balanceOf(uniswapPool.address)
-                console.log('bob balances:', bobBalance0.toString(), bobBalance1.toString())
-                console.log('pool balances:', poolBalance0.toString(), poolBalance1.toString())
-                const { _liquidity, tokensOwed0, tokensOwed1 } = await uniswapPool.positions(
-                    getPositionKey(hypervisor.address, -443580, 443580)
-                )
-                console.log('_liquidity:', _liquidity.toString())
-                console.log('tokensOwed0:', tokensOwed0.toString())
-                console.log('tokensOwed1:', tokensOwed1.toString())
-            })
-        })
-    })
-    */
 })

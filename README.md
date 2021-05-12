@@ -18,6 +18,6 @@ To trigger a rebalance, run:
 
 - (1) convert all python tests to typescript ones
 - remove most traces of charm
-- remove default theshold strategies, make it totally up to us
 - add 10% fee collection for visor
+    + test this fee collection
 - add single-sided liquidity provision

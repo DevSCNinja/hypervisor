@@ -51,7 +51,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
-    uint256 public constant MIN_TOTAL_SUPPLY = 1000;
     uint256 public constant DUST_THRESHOLD = 1000;
 
     IUniswapV3Pool public pool;
@@ -109,6 +108,7 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
      * @return amount1 Amount of token1 paid by sender
      */
     // TODO allow users to lock assets in vault here
+    // TODO remove shares here, they tell us what they have and we try to use it optimally
     function deposit(
         uint256 shares,
         uint256 amount0Max,
@@ -127,11 +127,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
                 _uint128Safe(shares),
                 msg.sender
             );
-
-            // Lock small number of shares and mint rest to recipient
-            require(shares > MIN_TOTAL_SUPPLY, "MIN_TOTAL_SUPPLY");
-            _mint(address(this), MIN_TOTAL_SUPPLY);
-            shares = shares.sub(MIN_TOTAL_SUPPLY);
         } else {
             // Calculate how much liquidity to deposit
             uint128 baseLiquidity = _liquidityForShares(baseLower, baseUpper, shares);
