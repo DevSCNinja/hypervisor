@@ -62,7 +62,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
 
     int24 public baseThreshold;
     int24 public limitThreshold;
-    uint256 public rebalanceCooldown;
     uint256 public maxTotalSupply;
 
     int24 public baseLower;
@@ -71,14 +70,12 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
     int24 public limitUpper;
 
     address public owner;
-    uint256 public lastUpdate;
 
     /**
      * @param _pool Underlying Uniswap V3 pool
      * @param _owner The owner of the Hypervisor Contract
      * _baseThreshold Used to determine base range
      * _limitThreshold Used to determine limit range
-     * _rebalanceCooldown Min time between rebalance() calls in seconds
      * _maxTotalSupply Pause deposits if total supply exceeds this
      */
     constructor(
@@ -93,7 +90,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
 
         baseThreshold = 1800;
         limitThreshold = 600;
-        rebalanceCooldown = 3600;
         maxTotalSupply = 1e17;
         owner = _owner;
 
@@ -216,9 +212,9 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
     /**
      * @notice Update vault's positions arbitrarily
      */
-    function rebalance(int24 lowerTick, int24 upperTick) external override nonReentrant onlyOwner {
-        require(block.timestamp >= lastUpdate.add(rebalanceCooldown), "cooldown");
-        lastUpdate = block.timestamp;
+    function rebalance(int24 _baseLower, int24 _baseUpper, int24 _limitLower, int24 _limitUpper) external override nonReentrant onlyOwner {
+        // Check that ranges are not the same
+        assert(_baseLower != _limitLower || _baseUpper != _limitUpper);
 
         int24 mid = _mid();
 
@@ -235,29 +231,16 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
 
         // Update base range and deposit liquidity in Uniswap pool. Base range
         // is symmetric so this order should use up all of one of the tokens.
-        (baseLower, baseUpper) = _baseRange(mid);
+        baseLower = _baseLower;
+        baseUpper = _baseUpper;
         uint128 baseLiquidity = _maxDepositable(baseLower, baseUpper);
         _mintLiquidity(baseLower, baseUpper, baseLiquidity, address(this));
 
-        // Calculate limit ranges
-        (int24 bidLower, int24 bidUpper) = _bidRange(mid);
-        (int24 askLower, int24 askUpper) = _askRange(mid);
-        uint128 bidLiquidity = _maxDepositable(bidLower, bidUpper);
-        uint128 askLiquidity = _maxDepositable(askLower, askUpper);
-
-        // After base order, should be left with just one token, so place a
-        // limit order to sell that token
-        if (bidLiquidity > askLiquidity) {
-            (limitLower, limitUpper) = (bidLower, bidUpper);
-            _mintLiquidity(bidLower, bidUpper, bidLiquidity, address(this));
-        } else {
-            (limitLower, limitUpper) = (askLower, askUpper);
-            _mintLiquidity(askLower, askUpper, askLiquidity, address(this));
-        }
-
-        // Assert base and limit ranges aren't the same, otherwise positions
-        // would get mixed up
-        assert(baseLower != limitLower || baseUpper != limitUpper);
+        // Calculate limit range
+        limitLower = _limitLower;
+        limitUpper = _limitUpper;
+        uint128 limitLiquidity = _maxDepositable(limitLower, limitUpper);
+        _mintLiquidity(limitLower, limitUpper, limitLiquidity, address(this));
     }
 
     function _mintLiquidity(

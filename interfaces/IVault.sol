@@ -17,7 +17,7 @@ interface IVault {
         address
     ) external returns (uint256, uint256);
 
-    function rebalance(int24 lowerTick, int24 upperTick) external;
+    function rebalance(int24 _baseLower, int24 _baseUpper, int24 _limitLower, int24 _limitUpper) external;
 
     function getTotalAmounts() external view returns (uint256, uint256);
 
