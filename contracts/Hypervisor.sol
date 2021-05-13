@@ -113,6 +113,14 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
         require(shares > 0, "shares");
         require(to != address(0), "to");
 
+        {
+        // calculate what ratio of assets we want
+        (uint256 amount0, uint256 amount1) = getTotalAmounts();
+        }
+        // calculate what ratio of assets we have
+
+        // swap assets if necessary to achieve desired balance for deposit
+
         if (totalSupply() == 0) {
             // For the initial deposit, place just the base order and ignore
             // the limit order
@@ -356,7 +364,7 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
      * @notice Calculate total holdings of token0 and token1, or how much of
      * each token this vault would hold if it withdrew all its liquidity.
      */
-    function getTotalAmounts() external view override returns (uint256 total0, uint256 total1) {
+    function getTotalAmounts() public view override returns (uint256 total0, uint256 total1) {
         (, uint256 base0, uint256 base1) = getBasePosition();
         (, uint256 limit0, uint256 limit1) = getLimitPosition();
         total0 = token0.balanceOf(address(this)).add(base0).add(limit0);

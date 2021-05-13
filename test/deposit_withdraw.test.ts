@@ -8,6 +8,8 @@ import {
     TICK_SPACINGS,
     encodePriceSqrt,
     getPositionKey,
+    getMinTick,
+    getMaxTick
 } from './shared/utilities'
 
 import {
@@ -23,7 +25,7 @@ import {
 const createFixtureLoader = waffle.createFixtureLoader
 
 describe('Hypervisor', () => {
-    const [wallet, alice, bob, other] = waffle.provider.getWallets()
+    const [wallet, alice, bob, carol, other] = waffle.provider.getWallets()
 
     let factory: UniswapV3Factory
     let router: SwapRouter
@@ -53,6 +55,28 @@ describe('Hypervisor', () => {
         const poolAddress = await factory.getPool(token0.address, token1.address, FeeAmount.MEDIUM)
         uniswapPool = (await ethers.getContractAt('IUniswapV3Pool', poolAddress)) as IUniswapV3Pool
         await uniswapPool.initialize(encodePriceSqrt('1', '1'))
+
+        // adding extraliquidity into pool to make sure there's always
+        // someone to swap with
+        await token0.mint(carol.address, ethers.utils.parseEther('1000000'))
+        await token1.mint(carol.address, ethers.utils.parseEther('1000000'))
+
+        await token0.connect(carol).approve(nft.address, ethers.utils.parseEther('1000000'))
+        await token1.connect(carol).approve(nft.address, ethers.utils.parseEther('1000000'))
+
+        await nft.connect(carol).mint({
+            token0: token0.address,
+            token1: token1.address,
+            tickLower: getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+            tickUpper: getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+            fee: FeeAmount.MEDIUM,
+            recipient: carol.address,
+            amount0Desired: ethers.utils.parseEther('100000'),
+            amount1Desired: ethers.utils.parseEther('100000'),
+            amount0Min: 0,
+            amount1Min: 0,
+            deadline: 2000000000,
+        })
 
         await token0.mint(alice.address, ethers.utils.parseEther('1000000'))
         await token1.mint(alice.address, ethers.utils.parseEther('1000000'))
