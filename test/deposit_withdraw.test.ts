@@ -97,5 +97,10 @@ describe('Hypervisor', () => {
         //expect(liquidityAlice).to.equal(ethers.utils.parseEther('0'))
         //// check Alice hypervisorLP tokens
         //expect(await hypervisor.balanceOf(alice.address)).to.equal(ethers.utils.parseEther('1000.000000000000000054'))
+
+        // do some swaps
+
+        // check that fees have accumulated
+
     })
 })

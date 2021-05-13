@@ -21,3 +21,5 @@ To trigger a rebalance, run:
 - add 10% fee collection for visor
     + test this fee collection
 - add single-sided liquidity provision
+    + use function that calculates proportion of tokens
+    + use that to initiate swap on deposited tokens

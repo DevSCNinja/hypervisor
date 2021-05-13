@@ -59,8 +59,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
     uint24 public fee;
     int24 public tickSpacing;
 
-    uint256 public maxTotalSupply;
-
     int24 public baseLower;
     int24 public baseUpper;
     int24 public limitLower;
@@ -71,7 +69,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
     /**
      * @param _pool Underlying Uniswap V3 pool
      * @param _owner The owner of the Hypervisor Contract
-     * _maxTotalSupply Pause deposits if total supply exceeds this
      */
     constructor(
         address _pool,
@@ -87,7 +84,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
         fee = pool.fee();
         tickSpacing = pool.tickSpacing();
 
-        maxTotalSupply = 1e17;
         owner = _owner;
 
         int24 mid = _mid();
@@ -153,9 +149,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
         require(amount0 <= amount0Max, "amount0Max");
         require(amount1 <= amount1Max, "amount1Max");
         emit Deposit(msg.sender, to, shares, amount0, amount1);
-
-        // Check total supply cap not exceeded. A value of 0 means no limit.
-        require(maxTotalSupply == 0 || totalSupply() <= maxTotalSupply, "maxTotalSupply");
     }
 
     /**
@@ -438,10 +431,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
     function _uint128Safe(uint256 x) internal pure returns (uint128) {
         assert(x <= type(uint128).max);
         return uint128(x);
-    }
-
-    function setMaxTotalSupply(uint256 _maxTotalSupply) external onlyOwner {
-        maxTotalSupply = _maxTotalSupply;
     }
 
     modifier onlyOwner {
