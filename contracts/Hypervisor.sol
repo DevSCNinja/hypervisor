@@ -9,6 +9,7 @@ import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 import "@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3MintCallback.sol";
+import "@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3SwapCallback.sol";
 import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import "@uniswap/v3-core/contracts/libraries/TickMath.sol";
 import "@uniswap/v3-periphery/contracts/libraries/LiquidityAmounts.sol";
@@ -85,8 +86,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
         tickSpacing = pool.tickSpacing();
 
         owner = _owner;
-
-        int24 mid = _mid();
 
         baseLower =  _baseLower;
         baseUpper =  _baseUpper;
@@ -320,7 +319,7 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
         return _liquidityForAmounts(tickLower, tickUpper, balance0, balance1);
     }
 
-    /// @dev Callback for Uniswap V3 pool.
+    /// @dev Callback for Uniswap V3 pool mint.
     function uniswapV3MintCallback(
         uint256 amount0,
         uint256 amount1,
@@ -335,6 +334,21 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
         } else {
             if (amount0 > 0) token0.safeTransferFrom(payer, msg.sender, amount0);
             if (amount1 > 0) token1.safeTransferFrom(payer, msg.sender, amount1);
+        }
+    }
+
+    /// @dev Callback for Uniswap V3 pool swap.
+    function uniswapV3SwapCallback(
+        int256 amount0Delta,
+        int256 amount1Delta,
+        bytes calldata /*data*/
+    ) external override {
+        require(msg.sender == address(currentPool));
+
+        if (amount0Delta > 0) {
+          TransferHelper.safeTransfer(token0, msg.sender, uint256(amount0Delta));
+        } else if (amount1Delta > 0) {
+          TransferHelper.safeTransfer(token1, msg.sender, uint256(amount1Delta));
         }
     }
 
@@ -413,14 +427,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
                 amount0,
                 amount1
             );
-    }
-
-    /// @dev Round tick down towards negative infinity so that it is a multiple
-    /// of `tickSpacing`.
-    function _floor(int24 tick) internal view returns (int24) {
-        int24 compressed = tick / tickSpacing;
-        if (tick < 0 && tick % tickSpacing != 0) compressed--;
-        return compressed * tickSpacing;
     }
 
     /// @dev Get current price from pool

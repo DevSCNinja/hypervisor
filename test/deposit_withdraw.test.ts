@@ -72,6 +72,9 @@ describe('Hypervisor', () => {
         let limitUpper = await hypervisor.limitUpper()
         console.log("limitLower: " + limitLower.toString() + "\nlimitUpper: " + limitUpper.toString())
 
+        let resp = await hypervisor.getTotalAmounts()
+        console.log("totalAmounts: " + resp)
+
         //const { _liquidity : liquidityHypervisor } = await uniswapPool.positions(
         //    getPositionKey(hypervisor.address, -887220, 887220)
         //)
