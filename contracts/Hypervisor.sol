@@ -48,7 +48,7 @@ import "../interfaces/IVault.sol";
  *          limit order is placed only one side of the current price so that
  *          the other token which it holds more of is used up.
  */
-contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
+contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, ERC20, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
@@ -343,12 +343,12 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
         int256 amount1Delta,
         bytes calldata /*data*/
     ) external override {
-        require(msg.sender == address(currentPool));
+        require(msg.sender == address(pool));
 
         if (amount0Delta > 0) {
-          TransferHelper.safeTransfer(token0, msg.sender, uint256(amount0Delta));
+          token0.transfer(msg.sender, uint256(amount0Delta));
         } else if (amount1Delta > 0) {
-          TransferHelper.safeTransfer(token1, msg.sender, uint256(amount1Delta));
+          token1.transfer(msg.sender, uint256(amount1Delta));
         }
     }
 
