@@ -95,7 +95,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
 
     /**
      * @notice Deposit tokens in proportion to the vault's holdings.
-     * @param shares Shares minted to recipient
      * @param amount0Max Revert if resulting amount0 is larger than this
      * @param amount1Max Revert if resulting amount1 is larger than this
      * @param to Recipient of shares
@@ -103,35 +102,40 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
      * @return amount1 Amount of token1 paid by sender
      */
     // TODO allow users to lock assets in vault here
-    // TODO remove shares here, they tell us what they have and we try to use it optimally
     function deposit(
-        uint256 shares,
         uint256 amount0Max,
         uint256 amount1Max,
         address to
     ) external override nonReentrant returns (uint256 amount0, uint256 amount1) {
-        require(shares > 0, "shares");
         require(to != address(0), "to");
-
-        {
-        // calculate what ratio of assets we want
-        (uint256 amount0, uint256 amount1) = getTotalAmounts();
-        }
-        // calculate what ratio of assets we have
-
-        // swap assets if necessary to achieve desired balance for deposit
 
         if (totalSupply() == 0) {
             // For the initial deposit, place just the base order and ignore
             // the limit order
+            uint128 shares = _liquidityForAmounts(baseLower, baseUpper, amount0Max, amount1Max);
             (amount0, amount1) = _mintLiquidity(
                 baseLower,
                 baseUpper,
                 _uint128Safe(shares),
                 msg.sender
             );
+
+            _mint(to, shares);
+            emit Deposit(msg.sender, to, shares, amount0, amount1);
         } else {
+            {
+            // calculate what ratio of assets we want
+            (uint256 liqAmount0, uint256 liqAmount1) = getTotalAmounts();
+            int24 mid = _mid();
+
+            }
+            // calculate what ratio of assets we have
+
+            // swap assets if necessary to achieve desired balance for deposit
+
             // Calculate how much liquidity to deposit
+            // change this to new balanced amounts
+            uint128 shares = _liquidityForAmounts(baseLower, baseUpper, amount0Max, amount1Max);
             uint128 baseLiquidity = _liquidityForShares(baseLower, baseUpper, shares);
             uint128 limitLiquidity = _liquidityForShares(limitLower, limitUpper, shares);
 
@@ -148,14 +152,10 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
             // Sum up total amounts paid by sender
             amount0 = base0.add(limit0).add(unused0);
             amount1 = base1.add(limit1).add(unused1);
+
+            _mint(to, shares);
+            emit Deposit(msg.sender, to, shares, amount0, amount1);
         }
-
-        // Mint shares to recipient
-        _mint(to, shares);
-
-        require(amount0 <= amount0Max, "amount0Max");
-        require(amount1 <= amount1Max, "amount1Max");
-        emit Deposit(msg.sender, to, shares, amount0, amount1);
     }
 
     /**

@@ -83,7 +83,7 @@ describe('Hypervisor', () => {
 
         await token0.connect(alice).approve(hypervisor.address, ethers.utils.parseEther('1000000'))
         await token1.connect(alice).approve(hypervisor.address, ethers.utils.parseEther('1000000'))
-        await hypervisor.connect(alice).deposit(100000000000, ethers.utils.parseEther('1000'), ethers.utils.parseEther('1000'), alice.address)
+        await hypervisor.connect(alice).deposit(ethers.utils.parseEther('1000'), ethers.utils.parseEther('1000'), alice.address)
         let token0Liq = await token0.balanceOf(poolAddress)
         let token1Liq = await token1.balanceOf(poolAddress)
         console.log("token0Liq: " + token0Liq.toString() + "\ntoken1Liq: " + token1Liq.toString())
