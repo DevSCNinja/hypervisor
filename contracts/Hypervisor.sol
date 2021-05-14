@@ -127,7 +127,8 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
             // calculate what ratio of assets we want
             (uint256 liqAmount0, uint256 liqAmount1) = getTotalAmounts();
             int24 mid = _mid();
-
+            uint160 sqrtPrice = TickMath.getSqrtRatioAtTick(mid);
+            uint price = uint(sqrtPrice).mul(uint(sqrtPrice)).mul(1e18) >> (96 * 2);
             }
             // calculate what ratio of assets we have
 
