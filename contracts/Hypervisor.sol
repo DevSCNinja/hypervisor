@@ -230,19 +230,21 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
         // Check current fee holdings
         (uint256 feesLimit0, uint256 feesLimit1) = getLimitFees();
         (uint256 feesBase0, uint256 feesBase1) = getBaseFees();
-        uint256 fees0 = feesLimit0.add(feesLimit0);
-        uint256 fees1 = feesLimit1.add(feesLimit1);
-        token0.transfer(msg.sender, fees0.div(10));
-        token1.transfer(msg.sender, fees1.div(10));
-        fees0 = fees0.sub(fees0.div(10));
-        fees1 = fees1.sub(fees1.div(10));
 
+        uint256 fees0 = feesBase0.add(feesLimit0);
+        uint256 fees1 = feesLimit1.add(feesLimit1);
         _burnLiquidity(baseLower, baseUpper, basePosition, address(this), true);
         _burnLiquidity(limitLower, limitUpper, limitPosition, address(this), true);
+
+        if(fees0>0) token0.transfer(feeRecipient, fees0.div(10));
+        if(fees1>0) token1.transfer(feeRecipient, fees1.div(10));
+        fees0 = fees0.sub(fees0.div(10));
+        fees1 = fees1.sub(fees1.div(10));
 
         // Emit event with useful info
         uint256 balance0 = token0.balanceOf(address(this));
         uint256 balance1 = token1.balanceOf(address(this));
+
         emit Rebalance(mid, balance0, balance1, totalSupply());
 
         // Update base range and deposit liquidity in Uniswap pool. Base range
