@@ -217,7 +217,7 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
     /**
      * @notice Update vault's positions arbitrarily
      */
-    function rebalance(int24 _baseLower, int24 _baseUpper, int24 _limitLower, int24 _limitUpper) external override nonReentrant onlyOwner {
+    function rebalance(int24 _baseLower, int24 _baseUpper, int24 _limitLower, int24 _limitUpper, address feeRecipient) external override nonReentrant onlyOwner {
         // Check that ranges are not the same
         assert(_baseLower != _limitLower || _baseUpper != _limitUpper);
 
@@ -226,6 +226,17 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
         // Withdraw all liquidity and collect all fees from Uniswap pool
         uint128 basePosition = _position(baseLower, baseUpper);
         uint128 limitPosition = _position(limitLower, limitUpper);
+
+        // Check current fee holdings
+        (uint256 feesLimit0, uint256 feesLimit1) = getLimitFees();
+        (uint256 feesBase0, uint256 feesBase1) = getBaseFees();
+        uint256 fees0 = feesLimit0.add(feesLimit0);
+        uint256 fees1 = feesLimit1.add(feesLimit1);
+        token0.transfer(msg.sender, fees0.div(10));
+        token1.transfer(msg.sender, fees1.div(10));
+        fees0 = fees0.sub(fees0.div(10));
+        fees1 = fees1.sub(fees1.div(10));
+
         _burnLiquidity(baseLower, baseUpper, basePosition, address(this), true);
         _burnLiquidity(limitLower, limitUpper, limitPosition, address(this), true);
 
@@ -404,6 +415,30 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
     {
         liquidity = _position(baseLower, baseUpper);
         (amount0, amount1) = _amountsForLiquidity(baseLower, baseUpper, liquidity);
+    }
+
+    function getBaseFees()
+        public
+        view
+        returns (
+            uint256 fees0,
+            uint256 fees1
+        )
+    {
+        bytes32 positionKey = keccak256(abi.encodePacked(address(this), baseLower, baseUpper));
+        (, , , fees0, fees1) = pool.positions(positionKey);
+    }
+
+    function getLimitFees()
+        public
+        view
+        returns (
+            uint256 fees0,
+            uint256 fees1
+        )
+    {
+        bytes32 positionKey = keccak256(abi.encodePacked(address(this), limitLower, limitUpper));
+        (, , , fees0, fees1) = pool.positions(positionKey);
     }
 
     /**

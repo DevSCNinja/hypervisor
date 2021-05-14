@@ -58,8 +58,8 @@ describe('Hypervisor', () => {
 
         // adding extraliquidity into pool to make sure there's always
         // someone to swap with
-        await token0.mint(carol.address, ethers.utils.parseEther('10000000000'))
-        await token1.mint(carol.address, ethers.utils.parseEther('10000000000'))
+        await token0.mint(carol.address, ethers.utils.parseEther('1000000000000'))
+        await token1.mint(carol.address, ethers.utils.parseEther('1000000000000'))
 
         await token0.connect(carol).approve(nft.address, ethers.utils.parseEther('10000000000'))
         await token1.connect(carol).approve(nft.address, ethers.utils.parseEther('10000000000'))
@@ -97,13 +97,34 @@ describe('Hypervisor', () => {
         await hypervisor.connect(alice).deposit(ethers.utils.parseEther('4000'), ethers.utils.parseEther('1000'), alice.address)
         token0Liq = await token0.balanceOf(poolAddress)
         token1Liq = await token1.balanceOf(poolAddress)
-        console.log("after alice's 2nd deposit");
+        console.log("after alice's 2nd deposit")
         console.log("token0Liq: " + token0Liq.toString() + "\ntoken1Liq: " + token1Liq.toString())
         resp = await hypervisor.getTotalAmounts()
         console.log("totalAmounts: " + resp)
 
+        // do a test swap
+        await router.connect(carol).exactInputSingle({
+            tokenIn: token0.address,
+            tokenOut: token1.address,
+            fee: FeeAmount.MEDIUM,
+            recipient: carol.address,
+            deadline: 2000000000, // Wed May 18 2033 03:33:20 GMT+0000
+            amountIn: ethers.utils.parseEther('7'),
+            amountOutMinimum: ethers.utils.parseEther('0'),
+            sqrtPriceLimitX96: 0,
+        })
+
         // TODO test rebalance
-        await hypervisor.rebalance(-1800, 1920, -540, 0);
+        console.log("owner balances before rebase")
+        token0Liq = await token0.balanceOf(bob.address)
+        token1Liq = await token1.balanceOf(bob.address)
+        console.log("token0Liq: " + token0Liq.toString() + "\ntoken1Liq: " + token1Liq.toString())
+        await hypervisor.rebalance(-1800, 1920, -540, 0, bob.address);
+        token0Liq = await token0.balanceOf(bob.address)
+        token1Liq = await token1.balanceOf(bob.address)
+        console.log("owner balances after rebase")
+        console.log("token0Liq: " + token0Liq.toString() + "\ntoken1Liq: " + token1Liq.toString())
+
         // have the positions been updated? Are the token amounts unchanged?
 
         // TODO check alice's liquidity here
