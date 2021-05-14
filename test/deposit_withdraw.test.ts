@@ -103,13 +103,15 @@ describe('Hypervisor', () => {
         console.log("totalAmounts: " + resp)
 
         // do a test swap
+        await token0.connect(carol).approve(router.address, ethers.utils.parseEther('10000000000'))
+        await token1.connect(carol).approve(router.address, ethers.utils.parseEther('10000000000'))
         await router.connect(carol).exactInputSingle({
             tokenIn: token0.address,
             tokenOut: token1.address,
             fee: FeeAmount.MEDIUM,
             recipient: carol.address,
             deadline: 2000000000, // Wed May 18 2033 03:33:20 GMT+0000
-            amountIn: ethers.utils.parseEther('7'),
+            amountIn: ethers.utils.parseEther('70'),
             amountOutMinimum: ethers.utils.parseEther('0'),
             sqrtPriceLimitX96: 0,
         })
