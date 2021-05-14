@@ -99,6 +99,7 @@ describe('Hypervisor', () => {
         let resp = await hypervisor.getTotalAmounts()
         console.log("totalAmounts: " + resp)
 
+        await hypervisor.connect(alice).deposit(ethers.utils.parseEther('2000'), ethers.utils.parseEther('1000'), alice.address)
         //const { _liquidity : liquidityHypervisor } = await uniswapPool.positions(
         //    getPositionKey(hypervisor.address, -887220, 887220)
         //)

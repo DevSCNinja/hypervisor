@@ -134,16 +134,16 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
             {
             int24 mid = _mid();
             uint160 sqrtPrice = TickMath.getSqrtRatioAtTick(mid);
-            price = uint256(sqrtPrice).mul(uint256(sqrtPrice)).mul(1e18) >> (96 * 2);
+            price = uint256(sqrtPrice).mul(uint256(sqrtPrice)) >> (96 * 2);
             }
             int256 zeroForOneTerm = int256(deposit0).mul(int256(pool1)).sub(int256(pool0).mul(int256(deposit1)));
             uint256 token1Exchanged = FullMath.mulDiv(price, zeroForOneTerm > 0 ? price.mul(uint256(zeroForOneTerm)) : price.mul(uint256(zeroForOneTerm.mul(-1))), pool0.mul(price).add(pool1));
             (int256 amount0Delta, int256 amount1Delta) = pool.swap(
-                address(this),
+                address(msg.sender),
                 zeroForOneTerm > 0,
                 zeroForOneTerm > 0 ? int256(token1Exchanged).mul(-1) : int256(token1Exchanged), // if we're swapping zero for one, then we want a precise output of token1 -- if we're swapping one for zero we want a precise input of token1
                 zeroForOneTerm > 0 ? TickMath.MIN_SQRT_RATIO + 1 : TickMath.MAX_SQRT_RATIO - 1,
-                abi.encode(address(this))
+                abi.encode(address(msg.sender))
             );
             finalDeposit0 = uint256(int256(finalDeposit0).sub(amount0Delta));
             finalDeposit1 = uint256(int256(finalDeposit1).sub(amount1Delta));
@@ -365,14 +365,17 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
     function uniswapV3SwapCallback(
         int256 amount0Delta,
         int256 amount1Delta,
-        bytes calldata /*data*/
+        bytes calldata data
     ) external override {
         require(msg.sender == address(pool));
+        address payer = abi.decode(data, (address));
 
         if (amount0Delta > 0) {
-          token0.transfer(msg.sender, uint256(amount0Delta));
+          // token0.transfer(msg.sender, uint256(amount0Delta));
+          token0.safeTransferFrom(payer, msg.sender, uint256(amount0Delta));
         } else if (amount1Delta > 0) {
-          token1.transfer(msg.sender, uint256(amount1Delta));
+          // token1.transfer(msg.sender, uint256(amount1Delta));
+          token1.safeTransferFrom(payer, msg.sender, uint256(amount1Delta));
         }
     }
 
