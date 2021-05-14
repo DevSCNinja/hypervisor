@@ -126,12 +126,16 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
             _mint(to, shares);
             emit Deposit(msg.sender, to, shares, amount0, amount1);
         } else {
+            uint256 finalDeposit0 = deposit0;
+            uint256 finalDeposit1 = deposit1;
             {
             (uint256 pool0, uint256 pool1) = getTotalAmounts();
+            uint256 price = 1;
+            {
             int24 mid = _mid();
             uint160 sqrtPrice = TickMath.getSqrtRatioAtTick(mid);
-            uint256 price = uint256(sqrtPrice).mul(uint256(sqrtPrice)).mul(1e18) >> (96 * 2);
-
+            price = uint256(sqrtPrice).mul(uint256(sqrtPrice)).mul(1e18) >> (96 * 2);
+            }
             int256 zeroForOneTerm = int256(deposit0).mul(int256(pool1)).sub(int256(pool0).mul(int256(deposit1)));
             uint256 token1Exchanged = FullMath.mulDiv(price, zeroForOneTerm > 0 ? price.mul(uint256(zeroForOneTerm)) : price.mul(uint256(zeroForOneTerm.mul(-1))), pool0.mul(price).add(pool1));
             (int256 amount0Delta, int256 amount1Delta) = pool.swap(
@@ -141,10 +145,12 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
                 zeroForOneTerm > 0 ? TickMath.MIN_SQRT_RATIO + 1 : TickMath.MAX_SQRT_RATIO - 1,
                 abi.encode(address(this))
             );
+            finalDeposit0 = uint256(int256(finalDeposit0).sub(amount0Delta));
+            finalDeposit1 = uint256(int256(finalDeposit1).sub(amount1Delta));
             }
 
             // change this to new balanced amounts
-            uint128 shares = _liquidityForAmounts(baseLower, baseUpper, deposit0, deposit1); // TODO these are no longer the deposits but the modified post-swap deposit values
+            uint128 shares = _liquidityForAmounts(baseLower, baseUpper, finalDeposit0, finalDeposit1);
             uint128 baseLiquidity = _liquidityForShares(baseLower, baseUpper, shares);
             uint128 limitLiquidity = _liquidityForShares(limitLower, limitUpper, shares);
 
@@ -153,7 +159,7 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
                 _mintLiquidity(baseLower, baseUpper, baseLiquidity, msg.sender);
             (uint256 limit0, uint256 limit1) =
                 _mintLiquidity(limitLower, limitUpper, limitLiquidity, msg.sender);
-
+            {
             // Transfer in tokens proportional to unused balances
             uint256 unused0 = _depositUnused(token0, shares);
             uint256 unused1 = _depositUnused(token1, shares);
@@ -161,6 +167,7 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
             // Sum up total amounts paid by sender
             amount0 = base0.add(limit0).add(unused0);
             amount1 = base1.add(limit1).add(unused1);
+            }
 
             _mint(to, shares);
             emit Deposit(msg.sender, to, shares, amount0, amount1);
