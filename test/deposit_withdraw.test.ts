@@ -84,31 +84,35 @@ describe('Hypervisor', () => {
         await token0.connect(alice).approve(hypervisor.address, ethers.utils.parseEther('1000000'))
         await token1.connect(alice).approve(hypervisor.address, ethers.utils.parseEther('1000000'))
         await hypervisor.connect(alice).deposit(ethers.utils.parseEther('1000'), ethers.utils.parseEther('1000'), alice.address)
+        // TODO check alice's liquidity here
+
+        console.log("after alice's 1st deposit");
         let token0Liq = await token0.balanceOf(poolAddress)
         let token1Liq = await token1.balanceOf(poolAddress)
         console.log("token0Liq: " + token0Liq.toString() + "\ntoken1Liq: " + token1Liq.toString())
-        // what are positions initialized as?
-        let baseLower = await hypervisor.baseLower()
-        let baseUpper = await hypervisor.baseUpper()
-        console.log("baseLower: " + baseLower.toString() + "\nbaseUpper: " + baseUpper.toString())
-
-        let limitLower = await hypervisor.limitLower()
-        let limitUpper = await hypervisor.limitUpper()
-        console.log("limitLower: " + limitLower.toString() + "\nlimitUpper: " + limitUpper.toString())
 
         let resp = await hypervisor.getTotalAmounts()
         console.log("totalAmounts: " + resp)
 
-        await hypervisor.connect(alice).deposit(ethers.utils.parseEther('2000'), ethers.utils.parseEther('1000'), alice.address)
+        await hypervisor.connect(alice).deposit(ethers.utils.parseEther('3000'), ethers.utils.parseEther('1000'), alice.address)
+        token0Liq = await token0.balanceOf(poolAddress)
+        token1Liq = await token1.balanceOf(poolAddress)
+        console.log("after alice's 2nd deposit");
+        console.log("token0Liq: " + token0Liq.toString() + "\ntoken1Liq: " + token1Liq.toString())
+        resp = await hypervisor.getTotalAmounts()
+        console.log("totalAmounts: " + resp)
+
+
+        // TODO check alice's liquidity here
+
         //const { _liquidity : liquidityHypervisor } = await uniswapPool.positions(
         //    getPositionKey(hypervisor.address, -887220, 887220)
         //)
 
         // test withdrawal of liquidity
         await hypervisor.connect(alice).withdraw(100000000000, alice.address);
-        token0Liq = await token0.balanceOf(poolAddress)
-        token1Liq = await token1.balanceOf(poolAddress)
-        console.log("token0Liq: " + token0Liq.toString() + "\ntoken1Liq: " + token1Liq.toString())
+        // TODO test that liquidity of pool has been properly reduced and that
+        // alice recieved her tokens
         // check tokens into uniswapV3pool after Alice deposit
         //expect(await token0.balanceOf(poolAddress)).to.equal(ethers.utils.parseEther('1000'))
         //expect(await token1.balanceOf(poolAddress)).to.equal(ethers.utils.parseEther('1000'))
