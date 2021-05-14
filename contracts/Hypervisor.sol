@@ -2,6 +2,7 @@
 
 pragma solidity 0.7.6;
 
+import "hardhat/console.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/math/SignedSafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -138,12 +139,20 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
             }
             int256 zeroForOneTerm = int256(deposit0).mul(int256(pool1)).sub(int256(pool0).mul(int256(deposit1)));
             uint256 token1Exchanged = FullMath.mulDiv(price, zeroForOneTerm > 0 ? price.mul(uint256(zeroForOneTerm)) : price.mul(uint256(zeroForOneTerm.mul(-1))), pool0.mul(price).add(pool1));
+
+            if(deposit0 > 0) {
+              token0.safeTransferFrom(msg.sender, address(this), deposit0);
+            }
+            if(deposit1 > 0) {
+              token1.safeTransferFrom(msg.sender, address(this), deposit1);
+            }
+
             (int256 amount0Delta, int256 amount1Delta) = pool.swap(
-                address(msg.sender),
+                address(this),
                 zeroForOneTerm > 0,
                 zeroForOneTerm > 0 ? int256(token1Exchanged).mul(-1) : int256(token1Exchanged), // if we're swapping zero for one, then we want a precise output of token1 -- if we're swapping one for zero we want a precise input of token1
                 zeroForOneTerm > 0 ? TickMath.MIN_SQRT_RATIO + 1 : TickMath.MAX_SQRT_RATIO - 1,
-                abi.encode(address(msg.sender))
+                abi.encode(address(this))
             );
             finalDeposit0 = uint256(int256(finalDeposit0).sub(amount0Delta));
             finalDeposit1 = uint256(int256(finalDeposit1).sub(amount1Delta));
@@ -156,9 +165,9 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
 
             // Deposit liquidity into Uniswap pool
             (uint256 base0, uint256 base1) =
-                _mintLiquidity(baseLower, baseUpper, baseLiquidity, msg.sender);
+                _mintLiquidity(baseLower, baseUpper, baseLiquidity, address(this));
             (uint256 limit0, uint256 limit1) =
-                _mintLiquidity(limitLower, limitUpper, limitLiquidity, msg.sender);
+                _mintLiquidity(limitLower, limitUpper, limitLiquidity, address(this));
             {
             // Transfer in tokens proportional to unused balances
             uint256 unused0 = _depositUnused(token0, shares);
@@ -226,13 +235,12 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
         // Withdraw all liquidity and collect all fees from Uniswap pool
         uint128 basePosition = _position(baseLower, baseUpper);
         uint128 limitPosition = _position(limitLower, limitUpper);
-
         // Check current fee holdings
         (uint256 feesLimit0, uint256 feesLimit1) = getLimitFees();
         (uint256 feesBase0, uint256 feesBase1) = getBaseFees();
 
         uint256 fees0 = feesBase0.add(feesLimit0);
-        uint256 fees1 = feesLimit1.add(feesLimit1);
+        uint256 fees1 = feesBase1.add(feesLimit1);
         _burnLiquidity(baseLower, baseUpper, basePosition, address(this), true);
         _burnLiquidity(limitLower, limitUpper, limitPosition, address(this), true);
 
@@ -267,7 +275,7 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
         uint128 liquidity,
         address payer
     ) internal returns (uint256 amount0, uint256 amount1) {
-        if (liquidity > 0) {
+      if (liquidity > 0) {
             (amount0, amount1) = pool.mint(
                 address(this),
                 tickLower,
@@ -384,11 +392,21 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
         address payer = abi.decode(data, (address));
 
         if (amount0Delta > 0) {
-          // token0.transfer(msg.sender, uint256(amount0Delta));
-          token0.safeTransferFrom(payer, msg.sender, uint256(amount0Delta));
-        } else if (amount1Delta > 0) {
-          // token1.transfer(msg.sender, uint256(amount1Delta));
-          token1.safeTransferFrom(payer, msg.sender, uint256(amount1Delta));
+        // token0.transfer(msg.sender, uint256(amount0Delta));
+        if(payer == address(this)) {
+            token0.transfer(msg.sender, uint256(amount0Delta));
+
+          }else{
+            token0.safeTransferFrom(payer, msg.sender, uint256(amount0Delta));
+          }
+        } 
+        else if (amount1Delta > 0) {
+          if(payer == address(this)) {
+            token1.transfer(msg.sender, uint256(amount1Delta));
+          }
+          else{
+            token1.safeTransferFrom(payer, msg.sender, uint256(amount1Delta));
+          }
         }
     }
 
