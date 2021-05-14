@@ -58,11 +58,11 @@ describe('Hypervisor', () => {
 
         // adding extraliquidity into pool to make sure there's always
         // someone to swap with
-        await token0.mint(carol.address, ethers.utils.parseEther('1000000'))
-        await token1.mint(carol.address, ethers.utils.parseEther('1000000'))
+        await token0.mint(carol.address, ethers.utils.parseEther('10000000000'))
+        await token1.mint(carol.address, ethers.utils.parseEther('10000000000'))
 
-        await token0.connect(carol).approve(nft.address, ethers.utils.parseEther('1000000'))
-        await token1.connect(carol).approve(nft.address, ethers.utils.parseEther('1000000'))
+        await token0.connect(carol).approve(nft.address, ethers.utils.parseEther('10000000000'))
+        await token1.connect(carol).approve(nft.address, ethers.utils.parseEther('10000000000'))
 
         await nft.connect(carol).mint({
             token0: token0.address,
@@ -71,8 +71,8 @@ describe('Hypervisor', () => {
             tickUpper: getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
             fee: FeeAmount.MEDIUM,
             recipient: carol.address,
-            amount0Desired: ethers.utils.parseEther('100000'),
-            amount1Desired: ethers.utils.parseEther('100000'),
+            amount0Desired: ethers.utils.parseEther('10000000000'),
+            amount1Desired: ethers.utils.parseEther('10000000000'),
             amount0Min: 0,
             amount1Min: 0,
             deadline: 2000000000,
@@ -94,7 +94,7 @@ describe('Hypervisor', () => {
         let resp = await hypervisor.getTotalAmounts()
         console.log("totalAmounts: " + resp)
 
-        await hypervisor.connect(alice).deposit(ethers.utils.parseEther('3000'), ethers.utils.parseEther('1000'), alice.address)
+        await hypervisor.connect(alice).deposit(ethers.utils.parseEther('4000'), ethers.utils.parseEther('1000'), alice.address)
         token0Liq = await token0.balanceOf(poolAddress)
         token1Liq = await token1.balanceOf(poolAddress)
         console.log("after alice's 2nd deposit");
@@ -102,6 +102,9 @@ describe('Hypervisor', () => {
         resp = await hypervisor.getTotalAmounts()
         console.log("totalAmounts: " + resp)
 
+        // TODO test rebalance
+        await hypervisor.rebalance(-1800, 1920, -540, 0);
+        // have the positions been updated? Are the token amounts unchanged?
 
         // TODO check alice's liquidity here
 
