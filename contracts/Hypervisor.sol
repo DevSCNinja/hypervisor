@@ -3,6 +3,7 @@
 pragma solidity 0.7.6;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/math/SignedSafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
@@ -12,6 +13,7 @@ import "@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3MintCallback.so
 import "@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3SwapCallback.sol";
 import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import "@uniswap/v3-core/contracts/libraries/TickMath.sol";
+import "@uniswap/v3-core/contracts/libraries/FullMath.sol";
 import "@uniswap/v3-periphery/contracts/libraries/LiquidityAmounts.sol";
 
 import "../interfaces/IVault.sol";
@@ -51,6 +53,7 @@ import "../interfaces/IVault.sol";
 contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, ERC20, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
+    using SignedSafeMath for int256;
 
     uint256 public constant DUST_THRESHOLD = 1000;
 
@@ -95,16 +98,16 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
 
     /**
      * @notice Deposit tokens in proportion to the vault's holdings.
-     * @param amount0Max Revert if resulting amount0 is larger than this
-     * @param amount1Max Revert if resulting amount1 is larger than this
+     * @param deposit0 Amount of token0 to deposit
+     * @param deposit1 Amount of token1 to deposit
      * @param to Recipient of shares
      * @return amount0 Amount of token0 paid by sender
      * @return amount1 Amount of token1 paid by sender
      */
     // TODO allow users to lock assets in vault here
     function deposit(
-        uint256 amount0Max,
-        uint256 amount1Max,
+        uint256 deposit0,
+        uint256 deposit1,
         address to
     ) external override nonReentrant returns (uint256 amount0, uint256 amount1) {
         require(to != address(0), "to");
@@ -112,7 +115,7 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
         if (totalSupply() == 0) {
             // For the initial deposit, place just the base order and ignore
             // the limit order
-            uint128 shares = _liquidityForAmounts(baseLower, baseUpper, amount0Max, amount1Max);
+            uint128 shares = _liquidityForAmounts(baseLower, baseUpper, deposit0, deposit1);
             (amount0, amount1) = _mintLiquidity(
                 baseLower,
                 baseUpper,
@@ -124,19 +127,24 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
             emit Deposit(msg.sender, to, shares, amount0, amount1);
         } else {
             {
-            // calculate what ratio of assets we want
-            (uint256 liqAmount0, uint256 liqAmount1) = getTotalAmounts();
+            (uint256 pool0, uint256 pool1) = getTotalAmounts();
             int24 mid = _mid();
             uint160 sqrtPrice = TickMath.getSqrtRatioAtTick(mid);
-            uint price = uint(sqrtPrice).mul(uint(sqrtPrice)).mul(1e18) >> (96 * 2);
+            uint256 price = uint256(sqrtPrice).mul(uint256(sqrtPrice)).mul(1e18) >> (96 * 2);
+
+            int256 zeroForOneTerm = int256(deposit0).mul(int256(pool1)).sub(int256(pool0).mul(int256(deposit1)));
+            uint256 token1Exchanged = FullMath.mulDiv(price, zeroForOneTerm > 0 ? price.mul(uint256(zeroForOneTerm)) : price.mul(uint256(zeroForOneTerm.mul(-1))), pool0.mul(price).add(pool1));
+            (int256 amount0Delta, int256 amount1Delta) = pool.swap(
+                address(this),
+                zeroForOneTerm > 0,
+                zeroForOneTerm > 0 ? int256(token1Exchanged) : int256(token1Exchanged).mul(-1),
+                zeroForOneTerm > 0 ? TickMath.MIN_SQRT_RATIO + 1 : TickMath.MAX_SQRT_RATIO - 1,
+                abi.encode(address(this))
+            );
             }
-            // calculate what ratio of assets we have
 
-            // swap assets if necessary to achieve desired balance for deposit
-
-            // Calculate how much liquidity to deposit
             // change this to new balanced amounts
-            uint128 shares = _liquidityForAmounts(baseLower, baseUpper, amount0Max, amount1Max);
+            uint128 shares = _liquidityForAmounts(baseLower, baseUpper, deposit0, deposit1);
             uint128 baseLiquidity = _liquidityForShares(baseLower, baseUpper, shares);
             uint128 limitLiquidity = _liquidityForShares(limitLower, limitUpper, shares);
 
