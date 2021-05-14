@@ -137,14 +137,14 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
             (int256 amount0Delta, int256 amount1Delta) = pool.swap(
                 address(this),
                 zeroForOneTerm > 0,
-                zeroForOneTerm > 0 ? int256(token1Exchanged) : int256(token1Exchanged).mul(-1),
+                zeroForOneTerm > 0 ? int256(token1Exchanged).mul(-1) : int256(token1Exchanged), // if we're swapping zero for one, then we want a precise output of token1 -- if we're swapping one for zero we want a precise input of token1
                 zeroForOneTerm > 0 ? TickMath.MIN_SQRT_RATIO + 1 : TickMath.MAX_SQRT_RATIO - 1,
                 abi.encode(address(this))
             );
             }
 
             // change this to new balanced amounts
-            uint128 shares = _liquidityForAmounts(baseLower, baseUpper, deposit0, deposit1);
+            uint128 shares = _liquidityForAmounts(baseLower, baseUpper, deposit0, deposit1); // TODO these are no longer the deposits but the modified post-swap deposit values
             uint128 baseLiquidity = _liquidityForShares(baseLower, baseUpper, shares);
             uint128 limitLiquidity = _liquidityForShares(limitLower, limitUpper, shares);
 
