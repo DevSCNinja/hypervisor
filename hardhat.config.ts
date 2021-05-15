@@ -1,13 +1,42 @@
 import 'hardhat-typechain'
 import '@nomiclabs/hardhat-ethers'
+import '@nomiclabs/hardhat-etherscan'
 import '@nomiclabs/hardhat-waffle'
 import './scripts/copy-uniswap-v3-artifacts.ts'
+import './tasks/hypervisor'
+import { parseUnits } from 'ethers/lib/utils'
+require('dotenv').config()
+const mnemonic = process.env.DEV_MNEMONIC || ''
+const archive_node = process.env.ETHEREUM_ARCHIVE_URL || ''
 
 export default {
     networks: {
         hardhat: {
             allowUnlimitedContractSize: false,
         },
+        goerli: {
+          url: 'https://goerli.infura.io/v3/' + process.env.INFURA_ID,
+          accounts: {
+            mnemonic,
+          },
+          gasPrice: parseUnits('130', 'gwei').toNumber(),
+        },
+        bsc: {
+          url: 'https://bsc-dataseed1.binance.org',
+          accounts: {
+            mnemonic,
+          },
+          // gasPrice: parseUnits('130', 'gwei').toNumber(),
+        },
+        mainnet: {
+          url: 'https://mainnet.infura.io/v3/' + process.env.INFURA_ID,
+          accounts: {
+            mnemonic,
+          },
+          // gasPrice: parseUnits('130', 'gwei').toNumber(),
+        },
+
+    
     },
     watcher: {
         compilation: {
@@ -29,4 +58,7 @@ export default {
             },
         },
     },
+  etherscan: {
+    apiKey: process.env.ETHERSCAN_APIKEY,
+  },
 }
