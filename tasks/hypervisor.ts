@@ -49,7 +49,7 @@ task('deploy-hypervisor-factory', 'Deploy Hypervisor contract')
       'HypervisorFactory',
       await ethers.getContractFactory('HypervisorFactory'),
       signer,
-      args 
+      [args]
     )
 
     await hypervisorFactory.deployTransaction.wait(5)
