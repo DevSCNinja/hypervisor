@@ -215,6 +215,7 @@ describe('Hypervisor', () => {
         // do a test swap
         console.log("Carol swap a huge quantity of coins, which should significantly impact hypervisor holdings-----")
         await token0.connect(carol).approve(router.address, ethers.utils.parseEther('10000000000'))
+        await token1.connect(carol).approve(router.address, ethers.utils.parseEther('10000000000'))
         await router.connect(carol).exactInputSingle({
             tokenIn: token0.address,
             tokenOut: token1.address,
@@ -228,7 +229,18 @@ describe('Hypervisor', () => {
 
         // check that the price as fully moved through the basePosition
         const { tick: currentTick } = await uniswapPool.slot0()
-        expect(currentTick).be.lt(-120);
+        expect(currentTick).to.be.lt(-120);
+
+        await router.connect(carol).exactInputSingle({
+            tokenIn: token1.address,
+            tokenOut: token0.address,
+            fee: FeeAmount.MEDIUM,
+            recipient: carol.address,
+            deadline: 2000000000, // Wed May 18 2033 03:33:20 GMT+0000
+            amountIn: ethers.utils.parseEther('75000000'),
+            amountOutMinimum: ethers.utils.parseEther('0'),
+            sqrtPriceLimitX96: 0,
+        })
 
         // TODO test rebalance
         console.log("owner balances before rebase (should be zero)")
@@ -238,9 +250,11 @@ describe('Hypervisor', () => {
         expect(fees0).to.equal(0)
         expect(fees1).to.equal(0)
         await hypervisor.rebalance(-120, 120, 0, 60, bob.address);
+        console.log("owner balances after rebase (should be equal to 30 bips of deposit)")
         fees0 = await token0.balanceOf(bob.address)
         fees1 = await token1.balanceOf(bob.address)
-        console.log("owner balances after rebase (should be equal to 30 bips of deposit)")
+        //expect(fees0).to.be.gt(0)
+        //expect(fees1).to.be.gt(0)
         console.log("fees0: " + fees0.toString() + "\nfees1: " + fees1.toString())
     })
 })
