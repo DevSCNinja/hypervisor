@@ -133,7 +133,7 @@ describe('Hypervisor', () => {
             fee: FeeAmount.MEDIUM,
             recipient: carol.address,
             deadline: 2000000000, // Wed May 18 2033 03:33:20 GMT+0000
-            amountIn: ethers.utils.parseEther('70000000'),
+            amountIn: ethers.utils.parseEther('1000000'),
             amountOutMinimum: ethers.utils.parseEther('0'),
             sqrtPriceLimitX96: 0,
         })
@@ -147,15 +147,17 @@ describe('Hypervisor', () => {
         console.log("totalAmounts: " + resp)
 
         // TODO test rebalance
-        console.log("owner balances before rebase")
-        token0Liq = await token0.balanceOf(bob.address)
-        token1Liq = await token1.balanceOf(bob.address)
-        console.log("token0Liq: " + token0Liq.toString() + "\ntoken1Liq: " + token1Liq.toString())
+        console.log("owner balances before rebase (should be zero)")
+        let fees0 = await token0.balanceOf(bob.address)
+        let fees1 = await token1.balanceOf(bob.address)
+        console.log("fees0: " + fees0.toString() + "\nfees1: " + fees1.toString())
+        expect(fees0).to.equal(0)
+        expect(fees1).to.equal(0)
         await hypervisor.rebalance(-1800, 1920, -540, 0, bob.address);
-        token0Liq = await token0.balanceOf(bob.address)
-        token1Liq = await token1.balanceOf(bob.address)
+        fees0 = await token0.balanceOf(bob.address)
+        fees1 = await token1.balanceOf(bob.address)
         console.log("owner balances after rebase")
-        console.log("token0Liq: " + token0Liq.toString() + "\ntoken1Liq: " + token1Liq.toString())
+        console.log("fees0: " + fees0.toString() + "\nfees1: " + fees1.toString())
         // have the positions been updated? Are the token amounts unchanged?
 
         // test withdrawal of liquidity
