@@ -143,9 +143,18 @@ describe('Hypervisor', () => {
         console.log("after alice's 4th deposit")
         console.log("token0Liq: " + token0Liq.toString() + "\ntoken1Liq: " + token1Liq.toString())
         resp = await hypervisor.getTotalAmounts()
-        console.log("totalAmounts: " + resp)
+        console.log("totalAmounts BEFORE REBALANCE: " + resp)
+        let limitUpper = -10
+        let limitLower = -540
+        const { tick: currentTick } = await uniswapPool.slot0()
+        if (resp[0] < resp[1]) {
+          expect(limitUpper).to.be.lt(currentTick)
+          expect(limitLower).to.be.lt(currentTick)
+        } else {
+          expect(limitUpper).to.be.gt(currentTick)
+          expect(limitLower).to.be.gt(currentTick)
+        }
 
-        // TODO test rebalance
         console.log("owner balances before rebase (should be zero)")
         let fees0 = await token0.balanceOf(bob.address)
         let fees1 = await token1.balanceOf(bob.address)
