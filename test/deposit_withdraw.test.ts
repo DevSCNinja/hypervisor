@@ -205,9 +205,10 @@ describe('Hypervisor', () => {
         await token0.mint(alice.address, ethers.utils.parseEther('1000000'))
         await token1.mint(alice.address, ethers.utils.parseEther('1000000'))
 
-        await token0.connect(alice).approve(hypervisor.address, ethers.utils.parseEther('100'))
-        await token1.connect(alice).approve(hypervisor.address, ethers.utils.parseEther('100'))
+        await token0.connect(alice).approve(hypervisor.address, ethers.utils.parseEther('1000000'))
+        await token1.connect(alice).approve(hypervisor.address, ethers.utils.parseEther('1000000'))
 
+        await hypervisor.connect(alice).deposit(ethers.utils.parseEther('100'), ethers.utils.parseEther('100'), alice.address)
         await hypervisor.connect(alice).deposit(ethers.utils.parseEther('100'), ethers.utils.parseEther('100'), alice.address)
         let resp = await hypervisor.getTotalAmounts()
         console.log("totalAmounts: " + resp)
