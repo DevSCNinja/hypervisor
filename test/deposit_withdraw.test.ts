@@ -84,6 +84,7 @@ describe('Hypervisor', () => {
         await token0.connect(alice).approve(hypervisor.address, ethers.utils.parseEther('1000000'))
         await token1.connect(alice).approve(hypervisor.address, ethers.utils.parseEther('1000000'))
         await hypervisor.connect(alice).deposit(ethers.utils.parseEther('1000'), ethers.utils.parseEther('1000'), alice.address)
+
         // TODO check alice's liquidity here
 
         console.log("after alice's 1st deposit");
@@ -94,7 +95,7 @@ describe('Hypervisor', () => {
         let resp = await hypervisor.getTotalAmounts()
         console.log("totalAmounts: " + resp)
 
-        await hypervisor.connect(alice).deposit(ethers.utils.parseEther('4000'), ethers.utils.parseEther('1000'), alice.address)
+        await hypervisor.connect(alice).deposit(ethers.utils.parseEther('1000'), ethers.utils.parseEther('4000'), alice.address)
         token0Liq = await token0.balanceOf(poolAddress)
         token1Liq = await token1.balanceOf(poolAddress)
         console.log("after alice's 2nd deposit")
@@ -102,7 +103,16 @@ describe('Hypervisor', () => {
         resp = await hypervisor.getTotalAmounts()
         console.log("totalAmounts: " + resp)
 
+        await hypervisor.connect(alice).deposit(ethers.utils.parseEther('2000'), ethers.utils.parseEther('1000'), alice.address)
+        token0Liq = await token0.balanceOf(poolAddress)
+        token1Liq = await token1.balanceOf(poolAddress)
+        console.log("after alice's 3rd deposit")
+        console.log("token0Liq: " + token0Liq.toString() + "\ntoken1Liq: " + token1Liq.toString())
+        resp = await hypervisor.getTotalAmounts()
+        console.log("totalAmounts: " + resp)
+
         // do a test swap
+        console.log("Carol swap a huge quantity of coins, which should significantly impact hypervisor holdings-----")
         await token0.connect(carol).approve(router.address, ethers.utils.parseEther('10000000000'))
         await token1.connect(carol).approve(router.address, ethers.utils.parseEther('10000000000'))
         await router.connect(carol).exactInputSingle({
@@ -111,10 +121,18 @@ describe('Hypervisor', () => {
             fee: FeeAmount.MEDIUM,
             recipient: carol.address,
             deadline: 2000000000, // Wed May 18 2033 03:33:20 GMT+0000
-            amountIn: ethers.utils.parseEther('70'),
+            amountIn: ethers.utils.parseEther('70000000'),
             amountOutMinimum: ethers.utils.parseEther('0'),
             sqrtPriceLimitX96: 0,
         })
+
+        await hypervisor.connect(alice).deposit(ethers.utils.parseEther('6000'), ethers.utils.parseEther('1000'), alice.address)
+        token0Liq = await token0.balanceOf(poolAddress)
+        token1Liq = await token1.balanceOf(poolAddress)
+        console.log("after alice's 4th deposit")
+        console.log("token0Liq: " + token0Liq.toString() + "\ntoken1Liq: " + token1Liq.toString())
+        resp = await hypervisor.getTotalAmounts()
+        console.log("totalAmounts: " + resp)
 
         // TODO test rebalance
         console.log("owner balances before rebase")
@@ -136,7 +154,13 @@ describe('Hypervisor', () => {
         //)
 
         // test withdrawal of liquidity
-        await hypervisor.connect(alice).withdraw(100000000000, alice.address);
+        let alice_liq_balance = await hypervisor.balanceOf(alice.address);
+        console.log("alice liq balance: " + alice_liq_balance);
+        await hypervisor.connect(alice).withdraw(alice_liq_balance, alice.address);
+        resp = await hypervisor.getTotalAmounts()
+        console.log("totalAmounts after alice withdraws liq: " + resp)
+
+
         // TODO test that liquidity of pool has been properly reduced and that
         // alice recieved her tokens
         // check tokens into uniswapV3pool after Alice deposit
