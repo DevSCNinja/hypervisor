@@ -70,6 +70,7 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
     int24 public limitUpper;
 
     address public owner;
+    uint256 public maxTotalSupply;
 
     /**
      * @param _pool Underlying Uniswap V3 pool
@@ -95,6 +96,7 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
         baseUpper =  _baseUpper;
         limitLower =  _limitLower;
         limitUpper =  _limitUpper;
+        maxTotalSupply = 0; // no cap
     }
 
     /**
@@ -182,6 +184,8 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
 
             _mint(to, shares);
             emit Deposit(msg.sender, to, shares, amount0, amount1);
+            // Check total supply cap not exceeded. A value of 0 means no limit.
+            require(maxTotalSupply == 0 || totalSupply() <= maxTotalSupply, "maxTotalSupply");
         }
     }
 
@@ -520,6 +524,10 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
     function _uint128Safe(uint256 x) internal pure returns (uint128) {
         assert(x <= type(uint128).max);
         return uint128(x);
+    }
+
+    function setMaxTotalSupply(uint256 _maxTotalSupply) external onlyOwner {
+        maxTotalSupply = _maxTotalSupply;
     }
 
     modifier onlyOwner {
