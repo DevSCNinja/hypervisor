@@ -38,6 +38,8 @@ interface IVault {
         int24 tick,
         uint256 totalAmount0,
         uint256 totalAmount1,
+        uint256 feeAmount0,
+        uint256 feeAmount1,
         uint256 totalSupply
     );
 }

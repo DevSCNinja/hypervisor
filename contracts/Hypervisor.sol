@@ -252,7 +252,7 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
         uint256 balance0 = token0.balanceOf(address(this));
         uint256 balance1 = token1.balanceOf(address(this));
 
-        emit Rebalance(mid, balance0, balance1, totalSupply());
+        emit Rebalance(mid, balance0, balance1, fees0, fees1, totalSupply());
 
         // Update base range and deposit liquidity in Uniswap pool. Base range
         // is symmetric so this order should use up all of one of the tokens.
