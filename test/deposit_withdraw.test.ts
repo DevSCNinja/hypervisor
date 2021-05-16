@@ -37,7 +37,6 @@ describe('Hypervisor', () => {
     let hypervisorFactory: HypervisorFactory
     let hypervisor: Hypervisor
 
-
     let loadFixture: ReturnType<typeof createFixtureLoader>
     before('create fixture loader', async () => {
         loadFixture = createFixtureLoader([wallet, other])
@@ -163,7 +162,7 @@ describe('Hypervisor', () => {
         // test withdrawal of liquidity
         alice_liq_balance = await hypervisor.balanceOf(alice.address)
         console.log("alice liq balance: " + alice_liq_balance)
-        await hypervisor.connect(alice).withdraw(alice_liq_balance, alice.address)
+        await hypervisor.connect(alice).withdraw(alice_liq_balance, alice.address, alice.address)
         resp = await hypervisor.getTotalAmounts()
         // verify that all liquidity has been removed from the pool
         expect(resp[0]).to.equal(0)
@@ -172,7 +171,7 @@ describe('Hypervisor', () => {
     })
 
     it('fees', async () => {
-        await hypervisorFactory.createHypervisor(token0.address, token1.address, FeeAmount.MEDIUM, -120, 60, 1200, 1800)
+        await hypervisorFactory.createHypervisor(token0.address, token1.address, FeeAmount.MEDIUM, -120, 120, 1200, 1800)
         const hypervisorAddress = await hypervisorFactory.getHypervisor(token0.address, token1.address, FeeAmount.MEDIUM)
         hypervisor = (await ethers.getContractAt('Hypervisor', hypervisorAddress)) as Hypervisor
 
@@ -209,9 +208,22 @@ describe('Hypervisor', () => {
         await token1.connect(alice).approve(hypervisor.address, ethers.utils.parseEther('1000000'))
 
         await hypervisor.connect(alice).deposit(ethers.utils.parseEther('100'), ethers.utils.parseEther('100'), alice.address)
-        await hypervisor.connect(alice).deposit(ethers.utils.parseEther('100'), ethers.utils.parseEther('100'), alice.address)
+        await hypervisor.connect(alice).deposit(ethers.utils.parseEther('1000'), ethers.utils.parseEther('100'), alice.address)
+        await hypervisor.connect(alice).deposit(ethers.utils.parseEther('1000'), ethers.utils.parseEther('100'), alice.address)
+        await hypervisor.connect(alice).deposit(ethers.utils.parseEther('1000'), ethers.utils.parseEther('100'), alice.address)
+        await hypervisor.connect(alice).deposit(ethers.utils.parseEther('1000'), ethers.utils.parseEther('100'), alice.address)
         let resp = await hypervisor.getTotalAmounts()
         console.log("totalAmounts: " + resp)
+
+        const { _liquidity : liquidityBase } = await uniswapPool.positions(
+          getPositionKey(hypervisor.address, -120, 120)
+        )
+        console.log("liquidity base: " + liquidityBase)
+
+        const { _liquidity : liquidityLimit } = await uniswapPool.positions(
+          getPositionKey(hypervisor.address, 1200, 1800)
+        )
+        console.log("liquidity limit: " + liquidityLimit)
 
         // do a test swap
         console.log("Carol swap a huge quantity of coins, which should significantly impact hypervisor holdings-----")
@@ -232,6 +244,9 @@ describe('Hypervisor', () => {
         const { tick: currentTick } = await uniswapPool.slot0()
         expect(currentTick).to.be.lt(-120);
 
+        let token0Liq = await token0.balanceOf(poolAddress)
+        let token1Liq = await token1.balanceOf(poolAddress)
+        console.log("token0Liq: " + token0Liq.toString() + "\ntoken1Liq: " + token1Liq.toString())
         await router.connect(carol).exactInputSingle({
             tokenIn: token1.address,
             tokenOut: token0.address,
@@ -242,7 +257,9 @@ describe('Hypervisor', () => {
             amountOutMinimum: ethers.utils.parseEther('0'),
             sqrtPriceLimitX96: 0,
         })
-
+        token0Liq = await token0.balanceOf(poolAddress)
+        token1Liq = await token1.balanceOf(poolAddress)
+        console.log("token0Liq: " + token0Liq.toString() + "\ntoken1Liq: " + token1Liq.toString())
         // TODO test rebalance
         console.log("owner balances before rebase (should be zero)")
         let fees0 = await token0.balanceOf(bob.address)

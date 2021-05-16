@@ -18,6 +18,7 @@ import "@uniswap/v3-core/contracts/libraries/FullMath.sol";
 import "@uniswap/v3-periphery/contracts/libraries/LiquidityAmounts.sol";
 
 import "../interfaces/IVault.sol";
+import "../interfaces/IUniversalVault.sol";
 
 /**
  * @title   Passive Rebalance Vault
@@ -198,7 +199,8 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
      */
     function withdraw(
         uint256 shares,
-        address to
+        address to,
+        address from
     ) external override nonReentrant returns (uint256 amount0, uint256 amount1) {
         require(shares > 0, "shares");
         require(to != address(0), "to");
@@ -223,7 +225,7 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
             amount1 = base1.add(limit1).add(unused1);
         }
 
-        // Burn shares
+        require(from == msg.sender || IUniversalVault(from).owner() == msg.sender, "Sender must own the tokens");
         _burn(msg.sender, shares);
 
         emit Withdraw(msg.sender, to, shares, amount0, amount1);
