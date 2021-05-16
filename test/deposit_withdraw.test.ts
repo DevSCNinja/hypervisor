@@ -144,14 +144,7 @@ describe('Hypervisor', () => {
         token1Liq = await token1.balanceOf(bob.address)
         console.log("owner balances after rebase")
         console.log("token0Liq: " + token0Liq.toString() + "\ntoken1Liq: " + token1Liq.toString())
-
         // have the positions been updated? Are the token amounts unchanged?
-
-        // TODO check alice's liquidity here
-
-        //const { _liquidity : liquidityHypervisor } = await uniswapPool.positions(
-        //    getPositionKey(hypervisor.address, -887220, 887220)
-        //)
 
         // test withdrawal of liquidity
         let alice_liq_balance = await hypervisor.balanceOf(alice.address);
@@ -159,30 +152,5 @@ describe('Hypervisor', () => {
         await hypervisor.connect(alice).withdraw(alice_liq_balance, alice.address);
         resp = await hypervisor.getTotalAmounts()
         console.log("totalAmounts after alice withdraws liq: " + resp)
-
-
-        // TODO test that liquidity of pool has been properly reduced and that
-        // alice recieved her tokens
-        // check tokens into uniswapV3pool after Alice deposit
-        //expect(await token0.balanceOf(poolAddress)).to.equal(ethers.utils.parseEther('1000'))
-        //expect(await token1.balanceOf(poolAddress)).to.equal(ethers.utils.parseEther('1000'))
-
-        //// check hypervisor's liquidity info after Alice deposit
-        //const { _liquidity : liquidityHypervisor } = await uniswapPool.positions(
-        //    getPositionKey(hypervisor.address, -887220, 887220)
-        //)
-        //expect(liquidityHypervisor).to.equal(ethers.utils.parseEther('1000.000000000000000054'))
-        //// check that Alice liquidity info is empty
-        //const { _liquidity : liquidityAlice } = await uniswapPool.positions(
-        //    getPositionKey(alice.address, -887220, 887220)
-        //)
-        //expect(liquidityAlice).to.equal(ethers.utils.parseEther('0'))
-        //// check Alice hypervisorLP tokens
-        //expect(await hypervisor.balanceOf(alice.address)).to.equal(ethers.utils.parseEther('1000.000000000000000054'))
-
-        // do some swaps
-
-        // check that fees have accumulated
-
-    })
+        })
 })

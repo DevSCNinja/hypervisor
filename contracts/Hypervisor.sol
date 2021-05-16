@@ -244,8 +244,8 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
         _burnLiquidity(baseLower, baseUpper, basePosition, address(this), true);
         _burnLiquidity(limitLower, limitUpper, limitPosition, address(this), true);
 
-        if(fees0>0) token0.transfer(feeRecipient, fees0.div(10));
-        if(fees1>0) token1.transfer(feeRecipient, fees1.div(10));
+        if(fees0 > 0) token0.transfer(feeRecipient, fees0.div(10));
+        if(fees1 > 0) token1.transfer(feeRecipient, fees1.div(10));
         fees0 = fees0.sub(fees0.div(10));
         fees1 = fees1.sub(fees1.div(10));
 
