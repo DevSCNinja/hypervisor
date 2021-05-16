@@ -3,7 +3,7 @@ import '@nomiclabs/hardhat-ethers'
 import '@nomiclabs/hardhat-etherscan'
 import '@nomiclabs/hardhat-waffle'
 import './scripts/copy-uniswap-v3-artifacts.ts'
-import './tasks/hypervisor'
+// import './tasks/hypervisor'
 import { parseUnits } from 'ethers/lib/utils'
 require('dotenv').config()
 const mnemonic = process.env.DEV_MNEMONIC || ''
