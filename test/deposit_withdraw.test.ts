@@ -47,7 +47,7 @@ describe('Hypervisor', () => {
         ({ token0, token1, token2, factory, router, nft, hypervisorFactory } = await loadFixture(hypervisorTestFixture))
     })
 
-    it('deposit', async () => {
+    it('multiple deposits and total withdrawal', async () => {
         await hypervisorFactory.createHypervisor(token0.address, token1.address, FeeAmount.MEDIUM,-1800, 1800, -600, 0)
         const hypervisorAddress = await hypervisorFactory.getHypervisor(token0.address, token1.address, FeeAmount.MEDIUM)
         hypervisor = (await ethers.getContractAt('Hypervisor', hypervisorAddress)) as Hypervisor
@@ -169,5 +169,78 @@ describe('Hypervisor', () => {
         expect(resp[0]).to.equal(0)
         expect(resp[1]).to.equal(0)
         console.log("totalAmounts after alice withdraws liq: " + resp)
+    })
+
+    it('fees', async () => {
+        await hypervisorFactory.createHypervisor(token0.address, token1.address, FeeAmount.MEDIUM, -120, 60, 1200, 1800)
+        const hypervisorAddress = await hypervisorFactory.getHypervisor(token0.address, token1.address, FeeAmount.MEDIUM)
+        hypervisor = (await ethers.getContractAt('Hypervisor', hypervisorAddress)) as Hypervisor
+
+        const poolAddress = await factory.getPool(token0.address, token1.address, FeeAmount.MEDIUM)
+        uniswapPool = (await ethers.getContractAt('IUniswapV3Pool', poolAddress)) as IUniswapV3Pool
+        await uniswapPool.initialize(encodePriceSqrt('1', '1'))
+
+        // adding extraliquidity into pool to make sure there's always
+        // someone to swap with
+        await token0.mint(carol.address, ethers.utils.parseEther('1000000000000'))
+        await token1.mint(carol.address, ethers.utils.parseEther('1000000000000'))
+
+        await token0.connect(carol).approve(nft.address, ethers.utils.parseEther('10000000000'))
+        await token1.connect(carol).approve(nft.address, ethers.utils.parseEther('10000000000'))
+
+        await nft.connect(carol).mint({
+            token0: token0.address,
+            token1: token1.address,
+            tickLower: getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+            tickUpper: getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+            fee: FeeAmount.MEDIUM,
+            recipient: carol.address,
+            amount0Desired: ethers.utils.parseEther('10000000000'),
+            amount1Desired: ethers.utils.parseEther('10000000000'),
+            amount0Min: 0,
+            amount1Min: 0,
+            deadline: 2000000000,
         })
+
+        await token0.mint(alice.address, ethers.utils.parseEther('1000000'))
+        await token1.mint(alice.address, ethers.utils.parseEther('1000000'))
+
+        await token0.connect(alice).approve(hypervisor.address, ethers.utils.parseEther('100'))
+        await token1.connect(alice).approve(hypervisor.address, ethers.utils.parseEther('100'))
+
+        await hypervisor.connect(alice).deposit(ethers.utils.parseEther('100'), ethers.utils.parseEther('100'), alice.address)
+        let resp = await hypervisor.getTotalAmounts()
+        console.log("totalAmounts: " + resp)
+
+        // do a test swap
+        console.log("Carol swap a huge quantity of coins, which should significantly impact hypervisor holdings-----")
+        await token0.connect(carol).approve(router.address, ethers.utils.parseEther('10000000000'))
+        await router.connect(carol).exactInputSingle({
+            tokenIn: token0.address,
+            tokenOut: token1.address,
+            fee: FeeAmount.MEDIUM,
+            recipient: carol.address,
+            deadline: 2000000000, // Wed May 18 2033 03:33:20 GMT+0000
+            amountIn: ethers.utils.parseEther('75000000'),
+            amountOutMinimum: ethers.utils.parseEther('0'),
+            sqrtPriceLimitX96: 0,
+        })
+
+        // check that the price as fully moved through the basePosition
+        const { tick: currentTick } = await uniswapPool.slot0()
+        expect(currentTick).be.lt(-120);
+
+        // TODO test rebalance
+        console.log("owner balances before rebase (should be zero)")
+        let fees0 = await token0.balanceOf(bob.address)
+        let fees1 = await token1.balanceOf(bob.address)
+        console.log("fees0: " + fees0.toString() + "\nfees1: " + fees1.toString())
+        expect(fees0).to.equal(0)
+        expect(fees1).to.equal(0)
+        await hypervisor.rebalance(-120, 120, 0, 60, bob.address);
+        fees0 = await token0.balanceOf(bob.address)
+        fees1 = await token1.balanceOf(bob.address)
+        console.log("owner balances after rebase (should be equal to 30 bips of deposit)")
+        console.log("fees0: " + fees0.toString() + "\nfees1: " + fees1.toString())
+    })
 })
