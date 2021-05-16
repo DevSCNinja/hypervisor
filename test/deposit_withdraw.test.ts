@@ -209,21 +209,8 @@ describe('Hypervisor', () => {
 
         await hypervisor.connect(alice).deposit(ethers.utils.parseEther('100'), ethers.utils.parseEther('100'), alice.address)
         await hypervisor.connect(alice).deposit(ethers.utils.parseEther('1000'), ethers.utils.parseEther('100'), alice.address)
-        await hypervisor.connect(alice).deposit(ethers.utils.parseEther('1000'), ethers.utils.parseEther('100'), alice.address)
-        await hypervisor.connect(alice).deposit(ethers.utils.parseEther('1000'), ethers.utils.parseEther('100'), alice.address)
-        await hypervisor.connect(alice).deposit(ethers.utils.parseEther('1000'), ethers.utils.parseEther('100'), alice.address)
         let resp = await hypervisor.getTotalAmounts()
         console.log("totalAmounts: " + resp)
-
-        const { _liquidity : liquidityBase } = await uniswapPool.positions(
-          getPositionKey(hypervisor.address, -120, 120)
-        )
-        console.log("liquidity base: " + liquidityBase)
-
-        const { _liquidity : liquidityLimit } = await uniswapPool.positions(
-          getPositionKey(hypervisor.address, 1200, 1800)
-        )
-        console.log("liquidity limit: " + liquidityLimit)
 
         // do a test swap
         console.log("Carol swap a huge quantity of coins, which should significantly impact hypervisor holdings-----")

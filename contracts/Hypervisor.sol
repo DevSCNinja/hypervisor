@@ -226,7 +226,7 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
         }
 
         require(from == msg.sender || IUniversalVault(from).owner() == msg.sender, "Sender must own the tokens");
-        _burn(msg.sender, shares);
+        _burn(from, shares);
 
         emit Withdraw(msg.sender, to, shares, amount0, amount1);
     }
