@@ -144,7 +144,7 @@ describe('Hypervisor', () => {
         console.log("token0Liq: " + token0Liq.toString() + "\ntoken1Liq: " + token1Liq.toString())
         resp = await hypervisor.getTotalAmounts()
         console.log("totalAmounts BEFORE REBALANCE: " + resp)
-        let limitUpper = -10
+        let limitUpper = -60
         let limitLower = -540
         const { tick: currentTick } = await uniswapPool.slot0()
         if (resp[0] < resp[1]) {
@@ -161,12 +161,19 @@ describe('Hypervisor', () => {
         console.log("fees0: " + fees0.toString() + "\nfees1: " + fees1.toString())
         expect(fees0).to.equal(0)
         expect(fees1).to.equal(0)
-        await hypervisor.rebalance(-1800, 1920, -540, 0, bob.address);
+        await hypervisor.rebalance(-1800, 1920, limitLower, limitUpper, bob.address);
         fees0 = await token0.balanceOf(bob.address)
         fees1 = await token1.balanceOf(bob.address)
         console.log("owner balances after rebase")
         console.log("fees0: " + fees0.toString() + "\nfees1: " + fees1.toString())
         // have the positions been updated? Are the token amounts unchanged?
+
+        const { _liquidity : liquidityLimit } = await uniswapPool.positions(
+            getPositionKey(alice.address, limitLower, limitUpper)
+        )
+        // TODO this limit position should be non-zero
+        console.log("liq limit: " + liquidityLimit)
+
 
         // test withdrawal of liquidity
         alice_liq_balance = await hypervisor.balanceOf(alice.address)
