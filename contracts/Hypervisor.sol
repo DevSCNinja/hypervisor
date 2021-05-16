@@ -135,10 +135,10 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
             {
             int24 mid = _mid();
             uint160 sqrtPrice = TickMath.getSqrtRatioAtTick(mid);
-            price = uint256(sqrtPrice).mul(uint256(sqrtPrice)) >> (96 * 2);
+            price = uint256(sqrtPrice).mul(uint256(sqrtPrice)).mul(1e18) >> (96 * 2);
             }
             int256 zeroForOneTerm = int256(deposit0).mul(int256(pool1)).sub(int256(pool0).mul(int256(deposit1)));
-            uint256 token1Exchanged = FullMath.mulDiv(price, zeroForOneTerm > 0 ? price.mul(uint256(zeroForOneTerm)) : price.mul(uint256(zeroForOneTerm.mul(-1))), pool0.mul(price).add(pool1));
+            uint256 token1Exchanged = FullMath.mulDiv(price, zeroForOneTerm > 0 ? uint256(zeroForOneTerm) : uint256(zeroForOneTerm.mul(-1)), pool0.mul(price).div(1e18).add(pool1).mul(1e18));
 
             if(deposit0 > 0) {
               token0.safeTransferFrom(msg.sender, address(this), deposit0);
