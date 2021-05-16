@@ -1,7 +1,7 @@
 import { ethers, waffle } from 'hardhat'
 import { BigNumber, BigNumberish, constants } from 'ethers'
 import { expect } from 'chai'
-import {fixture, hypervisorTestFixture} from "./shared/fixtures"
+import { fixture, hypervisorTestFixture } from "./shared/fixtures"
 
 import {
     FeeAmount,
@@ -83,6 +83,11 @@ describe('Hypervisor', () => {
 
         await token0.connect(alice).approve(hypervisor.address, ethers.utils.parseEther('1000000'))
         await token1.connect(alice).approve(hypervisor.address, ethers.utils.parseEther('1000000'))
+
+        // alice should start with 0 hypervisor tokens
+        let alice_liq_balance = await hypervisor.balanceOf(alice.address)
+        expect(alice_liq_balance).to.equal(0)
+
         await hypervisor.connect(alice).deposit(ethers.utils.parseEther('1000'), ethers.utils.parseEther('1000'), alice.address)
 
         // TODO check alice's liquidity here
@@ -91,6 +96,10 @@ describe('Hypervisor', () => {
         let token0Liq = await token0.balanceOf(poolAddress)
         let token1Liq = await token1.balanceOf(poolAddress)
         console.log("token0Liq: " + token0Liq.toString() + "\ntoken1Liq: " + token1Liq.toString())
+        alice_liq_balance = await hypervisor.balanceOf(alice.address)
+        console.log("alice liq balance: " + alice_liq_balance)
+        // check that alice has been awarded liquidity tokens
+        expect(alice_liq_balance).to.be.gt(0)
 
         let resp = await hypervisor.getTotalAmounts()
         console.log("totalAmounts: " + resp)
@@ -100,6 +109,9 @@ describe('Hypervisor', () => {
         token1Liq = await token1.balanceOf(poolAddress)
         console.log("after alice's 2nd deposit")
         console.log("token0Liq: " + token0Liq.toString() + "\ntoken1Liq: " + token1Liq.toString())
+        alice_liq_balance = await hypervisor.balanceOf(alice.address)
+        console.log("alice liq balance: " + alice_liq_balance)
+
         resp = await hypervisor.getTotalAmounts()
         console.log("totalAmounts: " + resp)
 
@@ -147,10 +159,13 @@ describe('Hypervisor', () => {
         // have the positions been updated? Are the token amounts unchanged?
 
         // test withdrawal of liquidity
-        let alice_liq_balance = await hypervisor.balanceOf(alice.address);
-        console.log("alice liq balance: " + alice_liq_balance);
-        await hypervisor.connect(alice).withdraw(alice_liq_balance, alice.address);
+        alice_liq_balance = await hypervisor.balanceOf(alice.address)
+        console.log("alice liq balance: " + alice_liq_balance)
+        await hypervisor.connect(alice).withdraw(alice_liq_balance, alice.address)
         resp = await hypervisor.getTotalAmounts()
+        // verify that all liquidity has been removed from the pool
+        expect(resp[0]).to.equal(0)
+        expect(resp[1]).to.equal(0)
         console.log("totalAmounts after alice withdraws liq: " + resp)
         })
 })
