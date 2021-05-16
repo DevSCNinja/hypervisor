@@ -147,15 +147,17 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
               token1.safeTransferFrom(msg.sender, address(this), deposit1);
             }
 
-            (int256 amount0Delta, int256 amount1Delta) = pool.swap(
-                address(this),
-                zeroForOneTerm > 0,
-                zeroForOneTerm > 0 ? int256(token1Exchanged).mul(-1) : int256(token1Exchanged), // if we're swapping zero for one, then we want a precise output of token1 -- if we're swapping one for zero we want a precise input of token1
-                zeroForOneTerm > 0 ? TickMath.MIN_SQRT_RATIO + 1 : TickMath.MAX_SQRT_RATIO - 1,
-                abi.encode(address(this))
-            );
-            finalDeposit0 = uint256(int256(finalDeposit0).sub(amount0Delta));
-            finalDeposit1 = uint256(int256(finalDeposit1).sub(amount1Delta));
+            if (token1Exchanged > 0) {
+              (int256 amount0Delta, int256 amount1Delta) = pool.swap(
+                  address(this),
+                  zeroForOneTerm > 0,
+                  zeroForOneTerm > 0 ? int256(token1Exchanged).mul(-1) : int256(token1Exchanged), // if we're swapping zero for one, then we want a precise output of token1 -- if we're swapping one for zero we want a precise input of token1
+                  zeroForOneTerm > 0 ? TickMath.MIN_SQRT_RATIO + 1 : TickMath.MAX_SQRT_RATIO - 1,
+                  abi.encode(address(this))
+              );
+              finalDeposit0 = uint256(int256(finalDeposit0).sub(amount0Delta));
+              finalDeposit1 = uint256(int256(finalDeposit1).sub(amount1Delta));
+            }
             }
 
             // change this to new balanced amounts
