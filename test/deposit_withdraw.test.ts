@@ -140,7 +140,7 @@ describe('Hypervisor', () => {
         })
 
         let limitUpper = -60
-        let limitLower = -120
+        let limitLower = -540
         resp = await hypervisor.getTotalAmounts()
         console.log("totalAmounts: " + resp)
 
@@ -173,8 +173,7 @@ describe('Hypervisor', () => {
         await hypervisor.connect(alice).withdraw(alice_liq_balance, alice.address, alice.address)
         resp = await hypervisor.getTotalAmounts()
         // verify that all liquidity has been removed from the pool
-        // expect(resp[0]).to.equal(0)
-        // expect(resp[1]).to.equal(0)
-        console.log("totalAmounts after alice withdraws liq: " + resp)
+        expect(resp[0]).to.equal(0)
+        expect(resp[1]).to.equal(0)
     })
 })
