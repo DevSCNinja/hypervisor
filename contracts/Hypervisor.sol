@@ -125,14 +125,29 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
             pool.burn(limitLower, limitUpper, 0);
         }
 
+        uint256 price;
+        {
         int24 currentTick = currentTick();
         uint160 sqrtPrice = TickMath.getSqrtRatioAtTick(currentTick);
-        uint256 price = uint256(sqrtPrice).mul(uint256(sqrtPrice)).mul(1e18) >> (96 * 2);
+        price = uint256(sqrtPrice).mul(uint256(sqrtPrice)).mul(1e18) >> (96 * 2);
+        }
 
-        // tokens which help balance the pool are given 100% of their token1 value in liquidity tokens
-        // TODO TODO any imbalanced tokens are given 98% of their token1 value in liquidity tokens
+        // tokens which help balance the pool are given 100% of their token1
+        // value in liquidity tokens TODO TODO any imbalanced tokens are given
+        // 98% of their token1 value in liquidity tokens
+        // if the deposit worsens the ratio, dock the max - min amount 2%
         uint256 deposit0PricedInToken1 = deposit0.mul(price).div(1e18);
-        uint256 shares = deposit1.add(deposit0PricedInToken1);
+        (uint256 pool0, uint256 pool1) = getTotalAmounts();
+        uint256 pool0PricedInToken1 = pool0.mul(price).div(1e18);
+        if (pool0PricedInToken1 > pool1 && deposit0PricedInToken1 > deposit1) {
+            shares = deposit0PricedInToken1.sub(deposit1).mul(9800000).div(10000000);
+            shares.add(deposit1.mul(2));
+        } else if (pool0PricedInToken1 < pool1 && deposit0PricedInToken1 < deposit1) {
+            shares = deposit1.sub(deposit0PricedInToken1).mul(9800000).div(10000000);
+            shares.add(deposit0PricedInToken1.mul(2));
+        } else {
+            shares = deposit1.add(deposit0PricedInToken1);
+        }
 
         if (deposit0 > 0) {
           token0.safeTransferFrom(msg.sender, address(this), deposit0);
