@@ -125,7 +125,6 @@ describe('Hypervisor', () => {
         await hypervisor.connect(alice).deposit(ethers.utils.parseEther('2000'), ethers.utils.parseEther('1000'), alice.address)
 
         // do a test swap
-        console.log("Carol swap a huge quantity of coins, which should significantly impact hypervisor holdings-----")
         await token0.connect(carol).approve(router.address, ethers.utils.parseEther('10000000000'))
         await token1.connect(carol).approve(router.address, ethers.utils.parseEther('10000000000'))
         await router.connect(carol).exactInputSingle({
@@ -142,12 +141,9 @@ describe('Hypervisor', () => {
         let limitUpper = -60
         let limitLower = -540
         resp = await hypervisor.getTotalAmounts()
-        console.log("totalAmounts: " + resp)
 
-        console.log("owner balances before rebase (should be zero)")
         let fees0 = await token0.balanceOf(bob.address)
         let fees1 = await token1.balanceOf(bob.address)
-        console.log("fees0: " + fees0.toString() + "\nfees1: " + fees1.toString())
         expect(fees0).to.equal(0)
         expect(fees1).to.equal(0)
         await hypervisor.rebalance(-1800, 1920, limitLower, limitUpper, bob.address);
@@ -157,8 +153,8 @@ describe('Hypervisor', () => {
         expect(token1hypervisor).to.equal(0)
         fees0 = await token0.balanceOf(bob.address)
         fees1 = await token1.balanceOf(bob.address)
-        console.log("owner balances after rebase")
-        console.log("fees0: " + fees0.toString() + "\nfees1: " + fees1.toString())
+        expect(fees0).to.gt(0)
+        expect(fees1).to.equal(0)
         // have the positions been updated? Are the token amounts unchanged?
         basePosition = await hypervisor.getBasePosition()
         limitPosition = await hypervisor.getLimitPosition()

@@ -212,6 +212,19 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
         // Check that ranges are not the same
         assert(_baseLower != _limitLower || _baseUpper != _limitUpper);
 
+        {
+        uint128 liq;
+        // update fess for inclusion in total pool amounts
+        (liq,,) = _position(baseLower, baseUpper);
+        if (liq > 0) {
+            pool.burn(baseLower, baseUpper, 0);
+        }
+        (liq,,)  = _position(limitLower, limitUpper);
+        if (liq > 0) {
+            pool.burn(limitLower, limitUpper, 0);
+        }
+        }
+
         int24 currentTick = currentTick();
 
         // Withdraw all liquidity and collect all fees from Uniswap pool
