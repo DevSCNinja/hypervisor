@@ -359,7 +359,7 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
         )
     {
         (uint128 positionLiquidity, uint128 tokensOwed0, uint128 tokensOwed1) = _position(baseLower, baseUpper);
-        (amount0, amount1) = _amountsForLiquidity(baseLower, baseUpper, liquidity);
+        (amount0, amount1) = _amountsForLiquidity(baseLower, baseUpper, positionLiquidity);
         amount0 = amount0.add(uint256(tokensOwed0));
         amount1 = amount1.add(uint256(tokensOwed1));
         liquidity = positionLiquidity;
@@ -378,7 +378,7 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
         )
     {
         (uint128 positionLiquidity, uint128 tokensOwed0, uint128 tokensOwed1) = _position(limitLower, limitUpper);
-        (amount0, amount1) = _amountsForLiquidity(limitLower, limitUpper, liquidity);
+        (amount0, amount1) = _amountsForLiquidity(limitLower, limitUpper, positionLiquidity);
         amount0 = amount0.add(uint256(tokensOwed0));
         amount1 = amount1.add(uint256(tokensOwed1));
         liquidity = positionLiquidity;
