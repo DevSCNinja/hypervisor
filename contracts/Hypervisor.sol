@@ -141,10 +141,10 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
         uint256 pool0PricedInToken1 = pool0.mul(price).div(1e18);
         if (pool0PricedInToken1.add(deposit0PricedInToken1) >= pool1 && deposit0PricedInToken1 > deposit1) {
             shares = reduceByPercent(deposit0PricedInToken1.sub(deposit1), 2);
-            shares.add(deposit1.mul(2));
+            shares = shares.add(deposit1.mul(2));
         } else if (pool0PricedInToken1 <= pool1 && deposit0PricedInToken1 < deposit1) {
             shares = reduceByPercent(deposit1.sub(deposit0PricedInToken1), 2);
-            shares.add(deposit0PricedInToken1.mul(2));
+            shares = shares.add(deposit0PricedInToken1.mul(2));
         } else if (pool0PricedInToken1.add(deposit0PricedInToken1) < pool1.add(deposit1) && deposit0PricedInToken1 < deposit1) {
             uint256 docked1 = pool1.add(deposit1).sub(pool0PricedInToken1.add(deposit0PricedInToken1));
             shares = reduceByPercent(docked1, 2);
@@ -456,7 +456,7 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
     }
 
     function reduceByPercent(uint256 quantity, uint256 percent) internal view returns (uint256) {
-          return quantity.mul(MILLIBASIS.mul(100) - percent.mul(MILLIBASIS)).div(MILLIBASIS.mul(100));
+          return quantity.mul(MILLIBASIS.mul(100 - percent)).div(MILLIBASIS.mul(100));
     }
 
     modifier onlyOwner {
