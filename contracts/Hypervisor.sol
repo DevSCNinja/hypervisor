@@ -212,29 +212,24 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
         // Check that ranges are not the same
         assert(_baseLower != _limitLower || _baseUpper != _limitUpper);
 
-        {
-        uint128 liq;
         // update fess for inclusion in total pool amounts
-        (liq,,) = _position(baseLower, baseUpper);
-        if (liq > 0) {
+        (uint128 baseLiquidity,,) = _position(baseLower, baseUpper);
+        if (baseLiquidity > 0) {
             pool.burn(baseLower, baseUpper, 0);
         }
-        (liq,,)  = _position(limitLower, limitUpper);
-        if (liq > 0) {
+        (uint128 limitLiquidity,,)  = _position(limitLower, limitUpper);
+        if (limitLiquidity > 0) {
             pool.burn(limitLower, limitUpper, 0);
         }
-        }
-
-        int24 currentTick = currentTick();
 
         // Withdraw all liquidity and collect all fees from Uniswap pool
-        (uint128 baseLiq, uint256 feesLimit0, uint256 feesLimit1) = _position(baseLower, baseUpper);
-        (uint128 limitLiq, uint256 feesBase0, uint256 feesBase1)  = _position(limitLower, limitUpper);
+        (, uint256 feesLimit0, uint256 feesLimit1) = _position(baseLower, baseUpper);
+        (, uint256 feesBase0, uint256 feesBase1)  = _position(limitLower, limitUpper);
 
         uint256 fees0 = feesBase0.add(feesLimit0);
         uint256 fees1 = feesBase1.add(feesLimit1);
-        _burnLiquidity(baseLower, baseUpper, baseLiq, address(this), true);
-        _burnLiquidity(limitLower, limitUpper, limitLiq, address(this), true);
+        _burnLiquidity(baseLower, baseUpper, baseLiquidity, address(this), true);
+        _burnLiquidity(limitLower, limitUpper, limitLiquidity, address(this), true);
 
         // transfer 10% of fees for VISR buybacks
         if(fees0 > 0) token0.transfer(feeRecipient, fees0.div(10));
@@ -242,16 +237,19 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
 
         uint256 balance0 = token0.balanceOf(address(this));
         uint256 balance1 = token1.balanceOf(address(this));
+        int24 currentTick = currentTick();
         emit Rebalance(currentTick, balance0, balance1, fees0, fees1, totalSupply());
 
         baseLower = _baseLower;
         baseUpper = _baseUpper;
-        uint128 baseLiquidity = _maxDepositable(baseLower, baseUpper);
+        baseLiquidity = _liquidityForAmounts(baseLower, baseUpper, balance0, balance1);
         _mintLiquidity(baseLower, baseUpper, baseLiquidity, address(this));
 
+        balance0 = token0.balanceOf(address(this));
+        balance1 = token1.balanceOf(address(this));
         limitLower = _limitLower;
         limitUpper = _limitUpper;
-        uint128 limitLiquidity = _maxDepositable(limitLower, limitUpper);
+        limitLiquidity = _liquidityForAmounts(limitLower, limitUpper, balance0, balance1);
         _mintLiquidity(limitLower, limitUpper, limitLiquidity, address(this));
     }
 
@@ -313,14 +311,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
     {
         bytes32 positionKey = keccak256(abi.encodePacked(address(this), tickLower, tickUpper));
         (liquidity, , , tokensOwed0, tokensOwed1) = pool.positions(positionKey);
-    }
-
-    /// @dev Maximum liquidity that can deposited in range by vault given
-    /// its balances of token0 and token1.
-    function _maxDepositable(int24 tickLower, int24 tickUpper) internal view returns (uint128) {
-        uint256 balance0 = token0.balanceOf(address(this));
-        uint256 balance1 = token1.balanceOf(address(this));
-        return _liquidityForAmounts(tickLower, tickUpper, balance0, balance1);
     }
 
     /// @dev Callback for Uniswap V3 pool mint.
