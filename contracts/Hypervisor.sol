@@ -173,13 +173,9 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
             (uint256 limit0, uint256 limit1) =
                 _burnLiquidity(limitLower, limitUpper, limitLiquidity, to, false);
 
-            // Transfer out tokens proportional to unused balances
-            uint256 unused0 = _withdrawUnused(token0, shares, to);
-            uint256 unused1 = _withdrawUnused(token1, shares, to);
-
             // Sum up total amounts sent to recipient
-            amount0 = base0.add(limit0).add(unused0);
-            amount1 = base1.add(limit1).add(unused1);
+            amount0 = base0.add(limit0);
+            amount1 = base1.add(limit1);
         }
 
         require(from == msg.sender || IUniversalVault(from).owner() == msg.sender, "Sender must own the tokens");
@@ -210,20 +206,15 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
         if(fees0 > 0) token0.transfer(feeRecipient, fees0.div(10));
         if(fees1 > 0) token1.transfer(feeRecipient, fees1.div(10));
 
-        // Emit event with useful info
         uint256 balance0 = token0.balanceOf(address(this));
         uint256 balance1 = token1.balanceOf(address(this));
-
         emit Rebalance(currentTick, balance0, balance1, fees0, fees1, totalSupply());
 
-        // Update base range and deposit liquidity in Uniswap pool. Base range
-        // is symmetric so this order should use up all of one of the tokens.
         baseLower = _baseLower;
         baseUpper = _baseUpper;
         uint128 baseLiquidity = _maxDepositable(baseLower, baseUpper);
         _mintLiquidity(baseLower, baseUpper, baseLiquidity, address(this));
 
-        // Calculate limit range
         limitLower = _limitLower;
         limitUpper = _limitUpper;
         uint128 limitLiquidity = _maxDepositable(limitLower, limitUpper);
@@ -265,33 +256,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
             if (collect0 > 0 || collect1 > 0) {
                 (amount0, amount1) = pool.collect(to, tickLower, tickUpper, collect0, collect1);
             }
-        }
-    }
-
-    /// @dev If vault holds enough unused token balance, transfer in
-    /// proportional amount from sender. In general, the unused balance should
-    /// be very low, so this transfer wouldn't be triggered.
-    function _depositUnused(IERC20 token, uint256 shares) internal returns (uint256 amount) {
-        uint256 balance = token.balanceOf(address(this));
-        if (balance >= DUST_THRESHOLD) {
-            // Add 1 to round up
-            amount = balance.mul(shares).div(totalSupply()).add(1);
-            token.safeTransferFrom(msg.sender, address(this), amount);
-        }
-    }
-
-    /// @dev If vault holds enough unused token balance, transfer proportional
-    /// amount to sender. In general, the unused balance should be very low, so
-    /// this transfer wouldn't be triggered.
-    function _withdrawUnused(
-        IERC20 token,
-        uint256 shares,
-        address to
-    ) internal returns (uint256 amount) {
-        uint256 balance = token.balanceOf(address(this));
-        if (balance >= DUST_THRESHOLD) {
-            amount = balance.mul(shares).div(totalSupply());
-            token.safeTransfer(to, amount);
         }
     }
 
