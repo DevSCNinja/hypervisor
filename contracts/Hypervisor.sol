@@ -58,6 +58,7 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
     using SignedSafeMath for int256;
 
     uint256 public constant DUST_THRESHOLD = 1000;
+    uint256 public constant MILLIBASIS = 100000;
 
     IUniswapV3Pool public pool;
     IERC20 public token0;
@@ -139,18 +140,18 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
         (uint256 pool0, uint256 pool1) = getTotalAmounts();
         uint256 pool0PricedInToken1 = pool0.mul(price).div(1e18);
         if (pool0PricedInToken1.add(deposit0PricedInToken1) >= pool1 && deposit0PricedInToken1 > deposit1) {
-            shares = deposit0PricedInToken1.sub(deposit1).mul(9800000).div(10000000);
+            shares = reduceByPercent(deposit0PricedInToken1.sub(deposit1), 2);
             shares.add(deposit1.mul(2));
         } else if (pool0PricedInToken1 <= pool1 && deposit0PricedInToken1 < deposit1) {
-            shares = deposit1.sub(deposit0PricedInToken1).mul(9800000).div(10000000);
+            shares = reduceByPercent(deposit1.sub(deposit0PricedInToken1), 2);
             shares.add(deposit0PricedInToken1.mul(2));
         } else if (pool0PricedInToken1.add(deposit0PricedInToken1) < pool1.add(deposit1) && deposit0PricedInToken1 < deposit1) {
             uint256 docked1 = pool1.add(deposit1).sub(pool0PricedInToken1.add(deposit0PricedInToken1));
-            shares = docked1.mul(9800000).div(10000000);
+            shares = reduceByPercent(docked1, 2);
             shares = deposit1.sub(docked1).add(deposit0PricedInToken1);
         } else if (pool0PricedInToken1.add(deposit0PricedInToken1) > pool1.add(deposit1) && deposit0PricedInToken1 > deposit1) {
             uint256 docked0 = pool0PricedInToken1.add(deposit0PricedInToken1).sub(pool1.add(deposit1));
-            shares = docked0.mul(9800000).div(10000000);
+            shares = reduceByPercent(docked0, 2);
             shares = deposit0PricedInToken1.sub(docked0).add(deposit1);
         } else {
             shares = deposit1.add(deposit0PricedInToken1);
@@ -452,6 +453,10 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
 
     function setMaxTotalSupply(uint256 _maxTotalSupply) external onlyOwner {
         maxTotalSupply = _maxTotalSupply;
+    }
+
+    function reduceByPercent(uint256 quantity, uint256 percent) internal view returns (uint256) {
+          return quantity.mul(MILLIBASIS.mul(100) - percent.mul(MILLIBASIS)).div(MILLIBASIS.mul(100));
     }
 
     modifier onlyOwner {
