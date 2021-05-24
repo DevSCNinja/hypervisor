@@ -130,8 +130,8 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
         uint256 price = uint256(sqrtPrice).mul(uint256(sqrtPrice)).mul(1e18) >> (96 * 2);
 
         // tokens which help balance the pool are given 100% of their token1 value in liquidity tokens
-        // any imbalanced tokens are given 98% of their token1 value in liquidity tokens
-        uint256 deposit0PricedInToken1 = deposit0.mul(price);
+        // TODO TODO any imbalanced tokens are given 98% of their token1 value in liquidity tokens
+        uint256 deposit0PricedInToken1 = deposit0.mul(price).div(1e18);
         uint256 shares = deposit1.add(deposit0PricedInToken1);
 
         if (deposit0 > 0) {

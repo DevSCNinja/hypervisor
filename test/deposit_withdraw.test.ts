@@ -89,19 +89,26 @@ describe('Hypervisor', () => {
 
         await hypervisor.connect(alice).deposit(ethers.utils.parseEther('1000'), ethers.utils.parseEther('1000'), alice.address)
 
-        // TODO check alice's liquidity here
-
         console.log("after alice's 1st deposit");
-        let token0Liq = await token0.balanceOf(poolAddress)
-        let token1Liq = await token1.balanceOf(poolAddress)
-        console.log("token0Liq: " + token0Liq.toString() + "\ntoken1Liq: " + token1Liq.toString())
+        let token0Liq = await token0.balanceOf(hypervisor.address)
+        let token1Liq = await token1.balanceOf(hypervisor.address)
+        expect(token0Liq).to.equal(ethers.utils.parseEther('1000'))
+        expect(token1Liq).to.equal(ethers.utils.parseEther('1000'))
         alice_liq_balance = await hypervisor.balanceOf(alice.address)
         console.log("alice liq balance: " + alice_liq_balance)
-        // check that alice has been awarded liquidity tokens
-        expect(alice_liq_balance).to.be.gt(0)
+        // check that alice has been awarded liquidity tokens equal the
+        // quantity of tokens deposited since their price is the same
+        expect(alice_liq_balance).to.equal(ethers.utils.parseEther('2000'))
 
-        let resp = await hypervisor.getTotalAmounts()
-        console.log("totalAmounts: " + resp)
+        // liquidity positions will only be created once rebalance is called
+        await hypervisor.rebalance(-1800, 1800, -600, 0, bob.address)
+
+        let basePosition = await hypervisor.getBasePosition()
+        let limitPosition = await hypervisor.getLimitPosition()
+        console.log(basePosition)
+        console.log(limitPosition)
+        expect(basePosition[0]).to.be.gt(0);
+        expect(limitPosition[0]).to.be.equal(0);
         /*
         await hypervisor.connect(alice).deposit(ethers.utils.parseEther('1000'), ethers.utils.parseEther('4000'), alice.address)
         token0Liq = await token0.balanceOf(poolAddress)
