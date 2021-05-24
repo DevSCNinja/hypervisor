@@ -131,17 +131,10 @@ describe('Hypervisor', () => {
             sqrtPriceLimitX96: 0,
         })
 
-        await hypervisor.connect(alice).deposit(ethers.utils.parseEther('6000'), ethers.utils.parseEther('1000'), alice.address)
         let limitUpper = -60
         let limitLower = -540
-        const { tick: currentTick } = await uniswapPool.slot0()
-        if (resp[0] < resp[1]) {
-          expect(limitUpper).to.be.lt(currentTick)
-          expect(limitLower).to.be.lt(currentTick)
-        } else {
-          expect(limitUpper).to.be.gt(currentTick)
-          expect(limitLower).to.be.gt(currentTick)
-        }
+        resp = await hypervisor.getTotalAmounts()
+        console.log("totalAmounts: " + resp)
 
         console.log("owner balances before rebase (should be zero)")
         let fees0 = await token0.balanceOf(bob.address)
@@ -155,13 +148,12 @@ describe('Hypervisor', () => {
         console.log("owner balances after rebase")
         console.log("fees0: " + fees0.toString() + "\nfees1: " + fees1.toString())
         // have the positions been updated? Are the token amounts unchanged?
-
-        const { _liquidity : liquidityLimit } = await uniswapPool.positions(
-            getPositionKey(alice.address, limitLower, limitUpper)
-        )
-        // TODO this limit position should be non-zero
-        console.log("liq limit: " + liquidityLimit)
-
+        basePosition = await hypervisor.getBasePosition()
+        limitPosition = await hypervisor.getLimitPosition()
+        expect(basePosition[0]).to.be.gt(0)
+        expect(limitPosition[0]).to.be.gt(0)
+        console.log("limit liq:" + limitPosition[0])
+        console.log("base liq:" + basePosition[0])
 
         // test withdrawal of liquidity
         alice_liq_balance = await hypervisor.balanceOf(alice.address)

@@ -56,7 +56,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
     using SafeMath for uint256;
     using SignedSafeMath for int256;
 
-    uint256 public constant DUST_THRESHOLD = 1000;
     uint256 public constant MILLIBASIS = 100000;
 
     IUniswapV3Pool public pool;
