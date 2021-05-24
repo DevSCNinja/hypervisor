@@ -110,6 +110,7 @@ describe('Hypervisor', () => {
         await hypervisor.connect(alice).deposit(ethers.utils.parseEther('1000'), ethers.utils.parseEther('4000'), alice.address)
         alice_liq_balance = await hypervisor.balanceOf(alice.address)
         console.log("alice liq balance: " + alice_liq_balance)
+        expect(alice_liq_balance).to.equal(ethers.utils.parseEther('6940'))
         let resp = await hypervisor.getTotalAmounts()
         console.log("totalAmounts: " + resp)
 
