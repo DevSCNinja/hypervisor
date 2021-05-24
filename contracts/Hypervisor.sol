@@ -11,7 +11,6 @@ import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 import "@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3MintCallback.sol";
-import "@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3SwapCallback.sol";
 import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import "@uniswap/v3-core/contracts/libraries/TickMath.sol";
 import "@uniswap/v3-core/contracts/libraries/FullMath.sol";
@@ -52,7 +51,7 @@ import "../interfaces/IUniversalVault.sol";
  *          limit order is placed only one side of the current price so that
  *          the other token which it holds more of is used up.
  */
-contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, ERC20, ReentrancyGuard {
+contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
     using SignedSafeMath for int256;
@@ -327,34 +326,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
         } else {
             if (amount0 > 0) token0.safeTransferFrom(payer, msg.sender, amount0);
             if (amount1 > 0) token1.safeTransferFrom(payer, msg.sender, amount1);
-        }
-    }
-
-    /// @dev Callback for Uniswap V3 pool swap.
-    function uniswapV3SwapCallback(
-        int256 amount0Delta,
-        int256 amount1Delta,
-        bytes calldata data
-    ) external override {
-        require(msg.sender == address(pool));
-        address payer = abi.decode(data, (address));
-
-        if (amount0Delta > 0) {
-        // token0.transfer(msg.sender, uint256(amount0Delta));
-        if(payer == address(this)) {
-            token0.transfer(msg.sender, uint256(amount0Delta));
-
-          }else{
-            token0.safeTransferFrom(payer, msg.sender, uint256(amount0Delta));
-          }
-        } 
-        else if (amount1Delta > 0) {
-          if(payer == address(this)) {
-            token1.transfer(msg.sender, uint256(amount1Delta));
-          }
-          else{
-            token1.safeTransferFrom(payer, msg.sender, uint256(amount1Delta));
-          }
         }
     }
 

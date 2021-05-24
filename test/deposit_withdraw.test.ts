@@ -114,14 +114,7 @@ describe('Hypervisor', () => {
         let resp = await hypervisor.getTotalAmounts()
         console.log("totalAmounts: " + resp)
 
-        /*
         await hypervisor.connect(alice).deposit(ethers.utils.parseEther('2000'), ethers.utils.parseEther('1000'), alice.address)
-        token0Liq = await token0.balanceOf(poolAddress)
-        token1Liq = await token1.balanceOf(poolAddress)
-        console.log("after alice's 3rd deposit")
-        console.log("token0Liq: " + token0Liq.toString() + "\ntoken1Liq: " + token1Liq.toString())
-        resp = await hypervisor.getTotalAmounts()
-        console.log("totalAmounts: " + resp)
 
         // do a test swap
         console.log("Carol swap a huge quantity of coins, which should significantly impact hypervisor holdings-----")
@@ -139,12 +132,6 @@ describe('Hypervisor', () => {
         })
 
         await hypervisor.connect(alice).deposit(ethers.utils.parseEther('6000'), ethers.utils.parseEther('1000'), alice.address)
-        token0Liq = await token0.balanceOf(poolAddress)
-        token1Liq = await token1.balanceOf(poolAddress)
-        console.log("after alice's 4th deposit")
-        console.log("token0Liq: " + token0Liq.toString() + "\ntoken1Liq: " + token1Liq.toString())
-        resp = await hypervisor.getTotalAmounts()
-        console.log("totalAmounts BEFORE REBALANCE: " + resp)
         let limitUpper = -60
         let limitLower = -540
         const { tick: currentTick } = await uniswapPool.slot0()
@@ -185,6 +172,5 @@ describe('Hypervisor', () => {
         // expect(resp[0]).to.equal(0)
         // expect(resp[1]).to.equal(0)
         console.log("totalAmounts after alice withdraws liq: " + resp)
-        */
     })
 })
