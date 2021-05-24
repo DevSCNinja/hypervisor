@@ -101,6 +101,10 @@ describe('Hypervisor', () => {
 
         // liquidity positions will only be created once rebalance is called
         await hypervisor.rebalance(-1800, 1800, -600, 0, bob.address)
+        token0hypervisor = await token0.balanceOf(hypervisor.address)
+        token1hypervisor = await token1.balanceOf(hypervisor.address)
+        expect(token0hypervisor).to.equal(0)
+        expect(token1hypervisor).to.equal(0)
 
         let basePosition = await hypervisor.getBasePosition()
         let limitPosition = await hypervisor.getLimitPosition()
@@ -108,6 +112,10 @@ describe('Hypervisor', () => {
         expect(limitPosition[0]).to.be.equal(0);
 
         await hypervisor.connect(alice).deposit(ethers.utils.parseEther('1000'), ethers.utils.parseEther('4000'), alice.address)
+        token0hypervisor = await token0.balanceOf(hypervisor.address)
+        token1hypervisor = await token1.balanceOf(hypervisor.address)
+        expect(token0hypervisor).to.equal(ethers.utils.parseEther('1000'))
+        expect(token1hypervisor).to.equal(ethers.utils.parseEther('4000'))
         alice_liq_balance = await hypervisor.balanceOf(alice.address)
         console.log("alice liq balance: " + alice_liq_balance)
         expect(alice_liq_balance).to.equal(ethers.utils.parseEther('6940'))
@@ -132,7 +140,7 @@ describe('Hypervisor', () => {
         })
 
         let limitUpper = -60
-        let limitLower = -540
+        let limitLower = -120
         resp = await hypervisor.getTotalAmounts()
         console.log("totalAmounts: " + resp)
 
@@ -143,6 +151,10 @@ describe('Hypervisor', () => {
         expect(fees0).to.equal(0)
         expect(fees1).to.equal(0)
         await hypervisor.rebalance(-1800, 1920, limitLower, limitUpper, bob.address);
+        token0hypervisor = await token0.balanceOf(hypervisor.address)
+        token1hypervisor = await token1.balanceOf(hypervisor.address)
+        expect(token0hypervisor).to.equal(0)
+        expect(token1hypervisor).to.equal(0)
         fees0 = await token0.balanceOf(bob.address)
         fees1 = await token1.balanceOf(bob.address)
         console.log("owner balances after rebase")
