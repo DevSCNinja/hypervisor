@@ -105,89 +105,46 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
      * @param deposit0 Amount of token0 to deposit
      * @param deposit1 Amount of token1 to deposit
      * @param to Recipient of shares
-     * @return amount0 Amount of token0 paid by sender
-     * @return amount1 Amount of token1 paid by sender
+     * @return shares Amount of shares distributed to sender
      */
-    // TODO allow users to lock assets in vault here
     function deposit(
         uint256 deposit0,
         uint256 deposit1,
         address to
-    ) external override nonReentrant returns (uint256 amount0, uint256 amount1) {
-        require(to != address(0), "to");
+    ) external override nonReentrant returns (uint256 shares) {
+        require(deposit0 > 0 || deposit1 > 0, "deposits must be nonzero");
+        require(to != address(0) && to != address(this), "to");
 
-        if (totalSupply() == 0) {
-            // For the initial deposit, place just the base order and ignore
-            // the limit order
-            uint128 shares = _liquidityForAmounts(baseLower, baseUpper, deposit0, deposit1);
-            (amount0, amount1) = _mintLiquidity(
-                baseLower,
-                baseUpper,
-                _uint128Safe(shares),
-                msg.sender
-            );
-
-            _mint(to, shares);
-            emit Deposit(msg.sender, to, shares, amount0, amount1);
-        } else {
-            uint256 finalDeposit0 = deposit0;
-            uint256 finalDeposit1 = deposit1;
-            {
-            (uint256 pool0, uint256 pool1) = getTotalAmounts();
-            uint256 price = 1;
-            {
-            int24 mid = _mid();
-            uint160 sqrtPrice = TickMath.getSqrtRatioAtTick(mid);
-            price = uint256(sqrtPrice).mul(uint256(sqrtPrice)).mul(1e18) >> (96 * 2);
-            }
-            int256 zeroForOneTerm = int256(deposit0).mul(int256(pool1)).sub(int256(pool0).mul(int256(deposit1)));
-            uint256 token1Exchanged = FullMath.mulDiv(price, zeroForOneTerm > 0 ? uint256(zeroForOneTerm) : uint256(zeroForOneTerm.mul(-1)), pool0.mul(price).div(1e18).add(pool1).mul(1e18));
-
-            if(deposit0 > 0) {
-              token0.safeTransferFrom(msg.sender, address(this), deposit0);
-            }
-            if(deposit1 > 0) {
-              token1.safeTransferFrom(msg.sender, address(this), deposit1);
-            }
-
-            if (token1Exchanged > 0) {
-              (int256 amount0Delta, int256 amount1Delta) = pool.swap(
-                  address(this),
-                  zeroForOneTerm > 0,
-                  zeroForOneTerm > 0 ? int256(token1Exchanged).mul(-1) : int256(token1Exchanged), // if we're swapping zero for one, then we want a precise output of token1 -- if we're swapping one for zero we want a precise input of token1
-                  zeroForOneTerm > 0 ? TickMath.MIN_SQRT_RATIO + 1 : TickMath.MAX_SQRT_RATIO - 1,
-                  abi.encode(address(this))
-              );
-              finalDeposit0 = uint256(int256(finalDeposit0).sub(amount0Delta));
-              finalDeposit1 = uint256(int256(finalDeposit1).sub(amount1Delta));
-            }
-            }
-
-            // change this to new balanced amounts
-            uint128 shares = _liquidityForAmounts(baseLower, baseUpper, finalDeposit0, finalDeposit1);
-            uint128 baseLiquidity = _liquidityForShares(baseLower, baseUpper, shares);
-            uint128 limitLiquidity = _liquidityForShares(limitLower, limitUpper, shares);
-
-            // Deposit liquidity into Uniswap pool
-            (uint256 base0, uint256 base1) =
-                _mintLiquidity(baseLower, baseUpper, baseLiquidity, address(this));
-            (uint256 limit0, uint256 limit1) =
-                _mintLiquidity(limitLower, limitUpper, limitLiquidity, address(this));
-            {
-            // Transfer in tokens proportional to unused balances
-            uint256 unused0 = _depositUnused(token0, shares);
-            uint256 unused1 = _depositUnused(token1, shares);
-
-            // Sum up total amounts paid by sender
-            amount0 = base0.add(limit0).add(unused0);
-            amount1 = base1.add(limit1).add(unused1);
-            }
-
-            _mint(to, shares);
-            emit Deposit(msg.sender, to, shares, amount0, amount1);
-            // Check total supply cap not exceeded. A value of 0 means no limit.
-            require(maxTotalSupply == 0 || totalSupply() <= maxTotalSupply, "maxTotalSupply");
+        // update fess for inclusion in total pool amounts
+        (uint128 baseLiquidity,,) = _position(baseLower, baseUpper);
+        if (baseLiquidity > 0) {
+            pool.burn(baseLower, baseUpper, 0);
         }
+        (uint128 limitLiquidity,,)  = _position(limitLower, limitUpper);
+        if (limitLiquidity > 0) {
+            pool.burn(limitLower, limitUpper, 0);
+        }
+
+        int24 currentTick = currentTick();
+        uint160 sqrtPrice = TickMath.getSqrtRatioAtTick(currentTick);
+        uint256 price = uint256(sqrtPrice).mul(uint256(sqrtPrice)).mul(1e18) >> (96 * 2);
+
+        // tokens which help balance the pool are given 100% of their token1 value in liquidity tokens
+        // any imbalanced tokens are given 98% of their token1 value in liquidity tokens
+        uint256 deposit0PricedInToken1 = deposit0.mul(price);
+        uint256 shares = deposit1.add(deposit0PricedInToken1);
+
+        if (deposit0 > 0) {
+          token0.safeTransferFrom(msg.sender, address(this), deposit0);
+        }
+        if (deposit1 > 0) {
+          token1.safeTransferFrom(msg.sender, address(this), deposit1);
+        }
+
+        _mint(to, shares);
+        emit Deposit(msg.sender, to, shares, deposit0, deposit1);
+        // Check total supply cap not exceeded. A value of 0 means no limit.
+        require(maxTotalSupply == 0 || totalSupply() <= maxTotalSupply, "maxTotalSupply");
     }
 
     /**
@@ -238,19 +195,16 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
         // Check that ranges are not the same
         assert(_baseLower != _limitLower || _baseUpper != _limitUpper);
 
-        int24 mid = _mid();
+        int24 currentTick = currentTick();
 
         // Withdraw all liquidity and collect all fees from Uniswap pool
-        uint128 basePosition = _position(baseLower, baseUpper);
-        uint128 limitPosition = _position(limitLower, limitUpper);
-        // Check current fee holdings
-        (uint256 feesLimit0, uint256 feesLimit1) = getLimitFees();
-        (uint256 feesBase0, uint256 feesBase1) = getBaseFees();
+        (uint128 baseLiq, uint256 feesLimit0, uint256 feesLimit1) = _position(baseLower, baseUpper);
+        (uint128 limitLiq, uint256 feesBase0, uint256 feesBase1)  = _position(limitLower, limitUpper);
 
         uint256 fees0 = feesBase0.add(feesLimit0);
         uint256 fees1 = feesBase1.add(feesLimit1);
-        _burnLiquidity(baseLower, baseUpper, basePosition, address(this), true);
-        _burnLiquidity(limitLower, limitUpper, limitPosition, address(this), true);
+        _burnLiquidity(baseLower, baseUpper, baseLiq, address(this), true);
+        _burnLiquidity(limitLower, limitUpper, limitLiq, address(this), true);
 
         // transfer 10% of fees for VISR buybacks
         if(fees0 > 0) token0.transfer(feeRecipient, fees0.div(10));
@@ -260,7 +214,7 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
         uint256 balance0 = token0.balanceOf(address(this));
         uint256 balance1 = token1.balanceOf(address(this));
 
-        emit Rebalance(mid, balance0, balance1, fees0, fees1, totalSupply());
+        emit Rebalance(currentTick, balance0, balance1, fees0, fees1, totalSupply());
 
         // Update base range and deposit liquidity in Uniswap pool. Base range
         // is symmetric so this order should use up all of one of the tokens.
@@ -348,8 +302,8 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
         int24 tickUpper,
         uint256 shares
     ) internal view returns (uint128) {
-        uint256 position = uint256(_position(tickLower, tickUpper));
-        return _uint128Safe(position.mul(shares).div(totalSupply()));
+        (uint128 position,,) = _position(tickLower, tickUpper);
+        return _uint128Safe(uint256(position).mul(shares).div(totalSupply()));
     }
 
     /// @dev Amount of liquidity deposited by vault into Uniswap V3 pool for a
@@ -357,10 +311,10 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
     function _position(int24 tickLower, int24 tickUpper)
         internal
         view
-        returns (uint128 liquidity)
+        returns (uint128 liquidity, uint128 tokensOwed0, uint128 tokensOwed1)
     {
         bytes32 positionKey = keccak256(abi.encodePacked(address(this), tickLower, tickUpper));
-        (liquidity, , , , ) = pool.positions(positionKey);
+        (liquidity, , , tokensOwed0, tokensOwed1) = pool.positions(positionKey);
     }
 
     /// @dev Maximum liquidity that can deposited in range by vault given
@@ -440,32 +394,11 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
             uint256 amount1
         )
     {
-        liquidity = _position(baseLower, baseUpper);
+        (uint128 positionLiquidity, uint128 tokensOwed0, uint128 tokensOwed1) = _position(baseLower, baseUpper);
         (amount0, amount1) = _amountsForLiquidity(baseLower, baseUpper, liquidity);
-    }
-
-    function getBaseFees()
-        public
-        view
-        returns (
-            uint256 fees0,
-            uint256 fees1
-        )
-    {
-        bytes32 positionKey = keccak256(abi.encodePacked(address(this), baseLower, baseUpper));
-        (, , , fees0, fees1) = pool.positions(positionKey);
-    }
-
-    function getLimitFees()
-        public
-        view
-        returns (
-            uint256 fees0,
-            uint256 fees1
-        )
-    {
-        bytes32 positionKey = keccak256(abi.encodePacked(address(this), limitLower, limitUpper));
-        (, , , fees0, fees1) = pool.positions(positionKey);
+        amount0 = amount0.add(uint256(tokensOwed0));
+        amount1 = amount1.add(uint256(tokensOwed1));
+        liquidity = positionLiquidity;
     }
 
     /**
@@ -480,8 +413,11 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
             uint256 amount1
         )
     {
-        liquidity = _position(limitLower, limitUpper);
+        (uint128 positionLiquidity, uint128 tokensOwed0, uint128 tokensOwed1) = _position(limitLower, limitUpper);
         (amount0, amount1) = _amountsForLiquidity(limitLower, limitUpper, liquidity);
+        amount0 = amount0.add(uint256(tokensOwed0));
+        amount1 = amount1.add(uint256(tokensOwed1));
+        liquidity = positionLiquidity;
     }
 
     /// @dev Wrapper around `getAmountsForLiquidity()` for convenience.
@@ -518,9 +454,9 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
             );
     }
 
-    /// @dev Get current price from pool
-    function _mid() internal view returns (int24 mid) {
-        (, mid, , , , , ) = pool.slot0();
+    /// @dev Get current tick from pool
+    function currentTick() internal view returns (int24 currentTick) {
+        (, currentTick, , , , , ) = pool.slot0();
     }
 
     function _uint128Safe(uint256 x) internal pure returns (uint128) {
