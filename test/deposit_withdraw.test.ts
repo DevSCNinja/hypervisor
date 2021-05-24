@@ -90,10 +90,10 @@ describe('Hypervisor', () => {
         await hypervisor.connect(alice).deposit(ethers.utils.parseEther('1000'), ethers.utils.parseEther('1000'), alice.address)
 
         console.log("after alice's 1st deposit");
-        let token0Liq = await token0.balanceOf(hypervisor.address)
-        let token1Liq = await token1.balanceOf(hypervisor.address)
-        expect(token0Liq).to.equal(ethers.utils.parseEther('1000'))
-        expect(token1Liq).to.equal(ethers.utils.parseEther('1000'))
+        let token0hypervisor = await token0.balanceOf(hypervisor.address)
+        let token1hypervisor = await token1.balanceOf(hypervisor.address)
+        expect(token0hypervisor).to.equal(ethers.utils.parseEther('1000'))
+        expect(token1hypervisor).to.equal(ethers.utils.parseEther('1000'))
         alice_liq_balance = await hypervisor.balanceOf(alice.address)
         console.log("alice liq balance: " + alice_liq_balance)
         // check that alice has been awarded liquidity tokens equal the
@@ -105,8 +105,6 @@ describe('Hypervisor', () => {
 
         let basePosition = await hypervisor.getBasePosition()
         let limitPosition = await hypervisor.getLimitPosition()
-        console.log(basePosition)
-        console.log(limitPosition)
         expect(basePosition[0]).to.be.gt(0);
         expect(limitPosition[0]).to.be.equal(0);
         /*
