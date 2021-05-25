@@ -162,6 +162,9 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
           token1.safeTransferFrom(msg.sender, address(this), deposit1);
         }
 
+        if (totalSupply() != 0) {
+          shares = shares.mul(totalSupply()).div(pool0PricedInToken1.add(pool1));
+        }
         _mint(to, shares);
         emit Deposit(msg.sender, to, shares, deposit0, deposit1);
         // Check total supply cap not exceeded. A value of 0 means no limit.
