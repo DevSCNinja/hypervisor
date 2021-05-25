@@ -50,7 +50,7 @@ import "../interfaces/IUniversalVault.sol";
  *          limit order is placed only one side of the current price so that
  *          the other token which it holds more of is used up.
  */
-contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
+contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20 {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
     using SignedSafeMath for int256;
