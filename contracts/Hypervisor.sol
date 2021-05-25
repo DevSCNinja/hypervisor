@@ -234,8 +234,8 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20 {
         _burnLiquidity(limitLower, limitUpper, limitLiquidity, address(this), true);
 
         // transfer 10% of fees for VISR buybacks
-        if(fees0 > 0) token0.transfer(feeRecipient, fees0.div(10));
-        if(fees1 > 0) token1.transfer(feeRecipient, fees1.div(10));
+        if(fees0 > 0) token0.safeTransfer(feeRecipient, fees0.div(10));
+        if(fees1 > 0) token1.safeTransfer(feeRecipient, fees1.div(10));
 
         uint256 balance0 = token0.balanceOf(address(this));
         uint256 balance1 = token1.balanceOf(address(this));
