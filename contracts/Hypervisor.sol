@@ -209,10 +209,10 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20, ReentrancyGuard {
      * @notice Update vault's positions arbitrarily
      */
     function rebalance(int24 _baseLower, int24 _baseUpper, int24 _limitLower, int24 _limitUpper, address feeRecipient) external override nonReentrant onlyOwner {
-        // Check that ranges are not the same
-        assert(_baseLower != _limitLower || _baseUpper != _limitUpper);
+        require(_baseLower < _baseUpper && _baseLower % tickSpacing == 0 && _baseUpper % tickSpacing == 0, "base position invalid");
+        require(_limitLower < _limitUpper && _limitLower % tickSpacing == 0 && _limitUpper % tickSpacing == 0, "limit position invalid");
 
-        // update fess for inclusion in total pool amounts
+        // update fees
         (uint128 baseLiquidity,,) = _position(baseLower, baseUpper);
         if (baseLiquidity > 0) {
             pool.burn(baseLower, baseUpper, 0);
