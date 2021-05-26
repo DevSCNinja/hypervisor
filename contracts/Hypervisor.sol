@@ -18,38 +18,7 @@ import "@uniswap/v3-periphery/contracts/libraries/LiquidityAmounts.sol";
 import "../interfaces/IVault.sol";
 import "../interfaces/IUniversalVault.sol";
 
-/**
- * @title   Passive Rebalance Vault
- * @notice  Automatically manages liquidity on Uniswap V3 on behalf of users.
- *
- *          When a user calls deposit(), they have to add amounts of the two
- *          tokens proportional to the vault's current holdings. These are
- *          directly deposited into the Uniswap V3 pool. Similarly, when a user
- *          calls withdraw(), the proportion of liquidity is withdrawn from the
- *          pool and the resulting amounts are returned to the user.
- *
- *          The rebalance() method has to be called periodically. This method
- *          withdraws all liquidity from the pool, collects fees and then uses
- *          all the tokens it holds to place the two range orders below.
- *
- *              1. Base order is placed between X - B and X + B + TS.
- *              2. Limit order is placed between X - L and X, or between X + TS
- *                 and X + L + TS, depending on which token it holds more of.
- *
- *          where:
- *
- *              X = current tick rounded down to multiple of tick spacing
- *              TS = tick spacing
- *              B = base threshold
- *              L = limit threshold
- *
- *          Note that after the rebalance, the vault should theoretically
- *          have deposited all its tokens and shouldn't have any unused
- *          balance. The base order deposits equal values, so it uses up
- *          the entire balance of whichever token it holds less of. Then, the
- *          limit order is placed only one side of the current price so that
- *          the other token which it holds more of is used up.
- */
+
 contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20 {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
