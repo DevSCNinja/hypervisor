@@ -70,6 +70,7 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20 {
 
     address public owner;
     uint256 public maxTotalSupply;
+    uint256 public penaltyPercent;
 
     /**
      * @param _pool Underlying Uniswap V3 pool
@@ -96,6 +97,7 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20 {
         limitLower =  _limitLower;
         limitUpper =  _limitUpper;
         maxTotalSupply = 0; // no cap
+        penaltyPercent = 2;
     }
 
     /**
@@ -137,18 +139,18 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20 {
         (uint256 pool0, uint256 pool1) = getTotalAmounts();
         uint256 pool0PricedInToken1 = pool0.mul(price).div(1e18);
         if (pool0PricedInToken1.add(deposit0PricedInToken1) >= pool1 && deposit0PricedInToken1 > deposit1) {
-            shares = reduceByPercent(deposit0PricedInToken1.sub(deposit1), 2);
+            shares = reduceByPercent(deposit0PricedInToken1.sub(deposit1), penaltyPercent);
             shares = shares.add(deposit1.mul(2));
         } else if (pool0PricedInToken1 <= pool1 && deposit0PricedInToken1 < deposit1) {
-            shares = reduceByPercent(deposit1.sub(deposit0PricedInToken1), 2);
+            shares = reduceByPercent(deposit1.sub(deposit0PricedInToken1), penaltyPercent);
             shares = shares.add(deposit0PricedInToken1.mul(2));
         } else if (pool0PricedInToken1.add(deposit0PricedInToken1) < pool1.add(deposit1) && deposit0PricedInToken1 < deposit1) {
             uint256 docked1 = pool1.add(deposit1).sub(pool0PricedInToken1.add(deposit0PricedInToken1));
-            shares = reduceByPercent(docked1, 2);
+            shares = reduceByPercent(docked1, penaltyPercent);
             shares = deposit1.sub(docked1).add(deposit0PricedInToken1);
         } else if (pool0PricedInToken1.add(deposit0PricedInToken1) > pool1.add(deposit1) && deposit0PricedInToken1 > deposit1) {
             uint256 docked0 = pool0PricedInToken1.add(deposit0PricedInToken1).sub(pool1.add(deposit1));
-            shares = reduceByPercent(docked0, 2);
+            shares = reduceByPercent(docked0, penaltyPercent);
             shares = deposit0PricedInToken1.sub(docked0).add(deposit1);
         } else {
             shares = deposit1.add(deposit0PricedInToken1);
@@ -428,6 +430,10 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20 {
 
     function setMaxTotalSupply(uint256 _maxTotalSupply) external onlyOwner {
         maxTotalSupply = _maxTotalSupply;
+    }
+
+    function setPenaltyPercent(uint256 _penaltyPercent) external onlyOwner {
+        penaltyPercent = _penaltyPercent;
     }
 
     function reduceByPercent(uint256 quantity, uint256 percent) internal view returns (uint256) {
