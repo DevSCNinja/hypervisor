@@ -41,10 +41,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20 {
     uint256 public maxTotalSupply;
     uint256 public penaltyPercent;
 
-    /**
-     * @param _pool Underlying Uniswap V3 pool
-     * @param _owner The owner of the Hypervisor Contract
-     */
     constructor(
         address _pool,
         address _owner,
@@ -69,13 +65,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20 {
         penaltyPercent = 2;
     }
 
-    /**
-     * @notice Deposit tokens in proportion to the vault's holdings.
-     * @param deposit0 Amount of token0 to deposit
-     * @param deposit1 Amount of token1 to deposit
-     * @param to Recipient of shares
-     * @return shares Amount of shares distributed to sender
-     */
     function deposit(
         uint256 deposit0,
         uint256 deposit1,
@@ -141,13 +130,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20 {
         require(maxTotalSupply == 0 || totalSupply() <= maxTotalSupply, "maxTotalSupply");
     }
 
-    /**
-     * @notice Withdraw tokens in proportion to the vault's holdings.
-     * @param shares Shares burned by sender
-     * @param to Recipient of tokens
-     * @return amount0 Amount of token0 sent to recipient
-     * @return amount1 Amount of token1 sent to recipient
-     */
     function withdraw(
         uint256 shares,
         address to,
@@ -178,9 +160,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20 {
         emit Withdraw(from, to, shares, amount0, amount1);
     }
 
-    /**
-     * @notice Update vault's positions arbitrarily
-     */
     function rebalance(int24 _baseLower, int24 _baseUpper, int24 _limitLower, int24 _limitUpper, address feeRecipient) external override onlyOwner {
         require(_baseLower < _baseUpper && _baseLower % tickSpacing == 0 && _baseUpper % tickSpacing == 0, "base position invalid");
         require(_limitLower < _limitUpper && _limitLower % tickSpacing == 0 && _limitUpper % tickSpacing == 0, "limit position invalid");
@@ -264,8 +243,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20 {
         }
     }
 
-    /// @dev Convert shares into amount of liquidity. Shouldn't be called
-    /// when total supply is 0.
     function _liquidityForShares(
         int24 tickLower,
         int24 tickUpper,
@@ -275,8 +252,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20 {
         return _uint128Safe(uint256(position).mul(shares).div(totalSupply()));
     }
 
-    /// @dev Amount of liquidity deposited by vault into Uniswap V3 pool for a
-    /// certain range.
     function _position(int24 tickLower, int24 tickUpper)
         internal
         view
@@ -286,7 +261,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20 {
         (liquidity, , , tokensOwed0, tokensOwed1) = pool.positions(positionKey);
     }
 
-    /// @dev Callback for Uniswap V3 pool mint.
     function uniswapV3MintCallback(
         uint256 amount0,
         uint256 amount1,
@@ -304,10 +278,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20 {
         }
     }
 
-    /**
-     * @notice Calculate total holdings of token0 and token1, or how much of
-     * each token this vault would hold if it withdrew all its liquidity.
-     */
     function getTotalAmounts() public view override returns (uint256 total0, uint256 total1) {
         (, uint256 base0, uint256 base1) = getBasePosition();
         (, uint256 limit0, uint256 limit1) = getLimitPosition();
@@ -315,9 +285,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20 {
         total1 = token1.balanceOf(address(this)).add(base1).add(limit1);
     }
 
-    /**
-     * @notice Calculate liquidity and equivalent token amounts of base order.
-     */
     function getBasePosition()
         public
         view
@@ -334,9 +301,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20 {
         liquidity = positionLiquidity;
     }
 
-    /**
-     * @notice Calculate liquidity and equivalent token amounts of limit order.
-     */
     function getLimitPosition()
         public
         view
@@ -353,7 +317,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20 {
         liquidity = positionLiquidity;
     }
 
-    /// @dev Wrapper around `getAmountsForLiquidity()` for convenience.
     function _amountsForLiquidity(
         int24 tickLower,
         int24 tickUpper,
@@ -369,7 +332,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20 {
             );
     }
 
-    /// @dev Wrapper around `getLiquidityForAmounts()` for convenience.
     function _liquidityForAmounts(
         int24 tickLower,
         int24 tickUpper,
@@ -387,7 +349,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20 {
             );
     }
 
-    /// @dev Get current tick from pool
     function currentTick() internal view returns (int24 currentTick) {
         (, currentTick, , , , , ) = pool.slot0();
     }
