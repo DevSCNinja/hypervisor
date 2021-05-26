@@ -149,7 +149,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20 {
             (uint256 limit0, uint256 limit1) =
                 _burnLiquidity(limitLower, limitUpper, limitLiquidity, to, false);
 
-            // Sum up total amounts sent to recipient
             amount0 = base0.add(limit0);
             amount1 = base1.add(limit1);
         }
@@ -160,9 +159,17 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20 {
         emit Withdraw(from, to, shares, amount0, amount1);
     }
 
-    function rebalance(int24 _baseLower, int24 _baseUpper, int24 _limitLower, int24 _limitUpper, address feeRecipient) external override onlyOwner {
-        require(_baseLower < _baseUpper && _baseLower % tickSpacing == 0 && _baseUpper % tickSpacing == 0, "base position invalid");
-        require(_limitLower < _limitUpper && _limitLower % tickSpacing == 0 && _limitUpper % tickSpacing == 0, "limit position invalid");
+    function rebalance(
+        int24 _baseLower,
+        int24 _baseUpper,
+        int24 _limitLower,
+        int24 _limitUpper,
+        address feeRecipient
+    ) external override onlyOwner {
+        require(_baseLower < _baseUpper && _baseLower % tickSpacing == 0 && _baseUpper % tickSpacing == 0,
+                "base position invalid");
+        require(_limitLower < _limitUpper && _limitLower % tickSpacing == 0 && _limitUpper % tickSpacing == 0,
+                "limit position invalid");
 
         // update fees
         (uint128 baseLiquidity,,) = _position(baseLower, baseUpper);
