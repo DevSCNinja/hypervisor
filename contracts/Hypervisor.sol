@@ -91,8 +91,8 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20 {
         }
 
         // tokens which help balance the pool are given 100% of their token1
-        // value in liquidity tokens
-        // if the deposit worsens the ratio, dock the max - min amount 2%
+        // value in liquidity tokens if the deposit worsens the ratio, dock the
+        // max - min amount `penaltyPercent`
         uint256 deposit0PricedInToken1 = deposit0.mul(price).div(1e18);
         (uint256 pool0, uint256 pool1) = getTotalAmounts();
         uint256 pool0PricedInToken1 = pool0.mul(price).div(1e18);
