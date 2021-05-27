@@ -227,8 +227,8 @@ describe('Hypervisor', () => {
             sqrtPriceLimitX96: 0,
         })
 
-        let limitUpper = 540
-        let limitLower = 0
+        let limitUpper = 0
+        let limitLower = -180
         resp = await hypervisor.getTotalAmounts()
         expect(resp[0] > resp[1])
         let currentTick = await hypervisor.currentTick();
@@ -246,6 +246,7 @@ describe('Hypervisor', () => {
         expect(token1hypervisor).to.equal(0)
         fees0 = await token0.balanceOf(bob.address)
         fees1 = await token1.balanceOf(bob.address)
+        // we are expecting VISR fees of 3 bips
         expect(fees0).to.gt(ethers.utils.parseEther('0.3'))
         expect(fees0).to.lt(ethers.utils.parseEther('0.305'))
         console.log("fees: " + fees0.toString())
@@ -259,6 +260,43 @@ describe('Hypervisor', () => {
         expect(limitPosition[0]).to.be.gt(0)
         console.log("limit liq:" + limitPosition[0])
         console.log("base liq:" + basePosition[0])
-    })
 
+
+        // swap everything back and check fees in the other token have
+        // been earned
+        await router.connect(carol).exactInputSingle({
+            tokenIn: token1.address,
+            tokenOut: token0.address,
+            fee: FeeAmount.MEDIUM,
+            recipient: carol.address,
+            deadline: 2000000000, // Wed May 18 2033 03:33:20 GMT+0000
+            amountIn: ethers.utils.parseEther('200000000'),
+            amountOutMinimum: ethers.utils.parseEther('0'),
+            sqrtPriceLimitX96: 0,
+        })
+        currentTick = await hypervisor.currentTick();
+        // this is beyond the bounds of the original base position
+        expect(currentTick).to.equal(200);
+        limitUpper = 180;
+        limitLower = 0;
+        await hypervisor.rebalance(-1800, 1800, limitLower, limitUpper, bob.address);
+        token0hypervisor = await token0.balanceOf(hypervisor.address)
+        token1hypervisor = await token1.balanceOf(hypervisor.address)
+        expect(token0hypervisor).to.equal(0)
+        expect(token1hypervisor).to.equal(0)
+        fees1 = await token1.balanceOf(bob.address)
+        // we are expecting fees of approximately 3 bips (10% of 30bips, which is total fees)
+        expect(fees1).to.gt(ethers.utils.parseEther('0.595'))
+        expect(fees1).to.lt(ethers.utils.parseEther('0.605'))
+        console.log("fees: " + fees0.toString())
+        // have the positions been updated? Are the token amounts unchanged?
+        basePosition = await hypervisor.getBasePosition()
+        limitPosition = await hypervisor.getLimitPosition()
+        // the base position should have 0 liquidity because we are left with
+        // only a single asset after carol's big swap
+        expect(basePosition[0]).to.equal(0)
+        expect(limitPosition[0]).to.be.gt(0)
+        console.log("limit liq:" + limitPosition[0])
+        console.log("base liq:" + basePosition[0])
+    })
 })
