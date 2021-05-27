@@ -229,7 +229,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20 {
         }
     }
 
-    /// @param collectAll Whether to also collect all accumulated fees.
     function _burnLiquidity(
         int24 tickLower,
         int24 tickUpper,
@@ -356,7 +355,7 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20 {
             );
     }
 
-    function currentTick() internal view returns (int24 currentTick) {
+    function currentTick() public view returns (int24 currentTick) {
         (, currentTick, , , , , ) = pool.slot0();
     }
 

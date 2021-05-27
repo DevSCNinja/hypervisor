@@ -44,9 +44,6 @@ describe('Hypervisor', () => {
 
     beforeEach('deploy contracts', async () => {
         ({ token0, token1, token2, factory, router, nft, hypervisorFactory } = await loadFixture(hypervisorTestFixture))
-    })
-
-    it('multiple deposits and total withdrawal', async () => {
         await hypervisorFactory.createHypervisor(token0.address, token1.address, FeeAmount.MEDIUM,-1800, 1800, -600, 0)
         const hypervisorAddress = await hypervisorFactory.getHypervisor(token0.address, token1.address, FeeAmount.MEDIUM)
         hypervisor = (await ethers.getContractAt('Hypervisor', hypervisorAddress)) as Hypervisor
@@ -76,7 +73,9 @@ describe('Hypervisor', () => {
             amount1Min: 0,
             deadline: 2000000000,
         })
+    })
 
+    it('multiple deposits and total withdrawal', async () => {
         await token0.mint(alice.address, ethers.utils.parseEther('1000000'))
         await token1.mint(alice.address, ethers.utils.parseEther('1000000'))
 
@@ -155,6 +154,7 @@ describe('Hypervisor', () => {
         fees0 = await token0.balanceOf(bob.address)
         fees1 = await token1.balanceOf(bob.address)
         expect(fees0).to.gt(0)
+        console.log(fees0.toString())
         expect(fees1).to.equal(0)
         // have the positions been updated? Are the token amounts unchanged?
         basePosition = await hypervisor.getBasePosition()
@@ -173,4 +173,92 @@ describe('Hypervisor', () => {
         expect(resp[0]).to.equal(0)
         expect(resp[1]).to.equal(0)
     })
+
+    it('calculates fees properly & rebalances to limit-only after large swap', async () => {
+        await token0.mint(alice.address, ethers.utils.parseEther('1000000'))
+        await token1.mint(alice.address, ethers.utils.parseEther('1000000'))
+
+        await token0.connect(alice).approve(hypervisor.address, ethers.utils.parseEther('1000000'))
+        await token1.connect(alice).approve(hypervisor.address, ethers.utils.parseEther('1000000'))
+
+        // alice should start with 0 hypervisor tokens
+        let alice_liq_balance = await hypervisor.balanceOf(alice.address)
+        expect(alice_liq_balance).to.equal(0)
+
+        await hypervisor.connect(alice).deposit(ethers.utils.parseEther('1000'), ethers.utils.parseEther('1000'), alice.address)
+
+        let token0hypervisor = await token0.balanceOf(hypervisor.address)
+        let token1hypervisor = await token1.balanceOf(hypervisor.address)
+        expect(token0hypervisor).to.equal(ethers.utils.parseEther('1000'))
+        expect(token1hypervisor).to.equal(ethers.utils.parseEther('1000'))
+        alice_liq_balance = await hypervisor.balanceOf(alice.address)
+        console.log("alice liq balance: " + alice_liq_balance)
+        // check that alice has been awarded liquidity tokens equal the
+        // quantity of tokens deposited since their price is the same
+        expect(alice_liq_balance).to.equal(ethers.utils.parseEther('2000'))
+
+        // liquidity positions will only be created once rebalance is called
+        await hypervisor.rebalance(-120, 120, -60, 0, bob.address)
+        token0hypervisor = await token0.balanceOf(hypervisor.address)
+        token1hypervisor = await token1.balanceOf(hypervisor.address)
+        expect(token0hypervisor).to.equal(0)
+        expect(token1hypervisor).to.equal(0)
+
+        let basePosition = await hypervisor.getBasePosition()
+        let limitPosition = await hypervisor.getLimitPosition()
+        expect(basePosition[0]).to.be.gt(0);
+        expect(limitPosition[0]).to.be.equal(0);
+
+        let resp = await hypervisor.getTotalAmounts()
+        expect(resp[0] === resp[1])
+        console.log("totalAmounts: " + resp)
+
+        // do a test swap
+        await token0.connect(carol).approve(router.address, ethers.utils.parseEther('10000000000'))
+        await token1.connect(carol).approve(router.address, ethers.utils.parseEther('10000000000'))
+        await router.connect(carol).exactInputSingle({
+            tokenIn: token0.address,
+            tokenOut: token1.address,
+            fee: FeeAmount.MEDIUM,
+            recipient: carol.address,
+            deadline: 2000000000, // Wed May 18 2033 03:33:20 GMT+0000
+            amountIn: ethers.utils.parseEther('100000000'),
+            amountOutMinimum: ethers.utils.parseEther('0'),
+            sqrtPriceLimitX96: 0,
+        })
+
+        let limitUpper = 540
+        let limitLower = 0
+        resp = await hypervisor.getTotalAmounts()
+        expect(resp[0] > resp[1])
+        let currentTick = await hypervisor.currentTick();
+        // this is beyond the bounds of the original base position
+        expect(currentTick).to.equal(-199);
+
+        let fees0 = await token0.balanceOf(bob.address)
+        let fees1 = await token1.balanceOf(bob.address)
+        expect(fees0).to.equal(0)
+        expect(fees1).to.equal(0)
+        await hypervisor.rebalance(-1800, 1800, limitLower, limitUpper, bob.address);
+        token0hypervisor = await token0.balanceOf(hypervisor.address)
+        token1hypervisor = await token1.balanceOf(hypervisor.address)
+        expect(token0hypervisor).to.equal(0)
+        expect(token1hypervisor).to.equal(0)
+        fees0 = await token0.balanceOf(bob.address)
+        fees1 = await token1.balanceOf(bob.address)
+        expect(fees0).to.gt(ethers.utils.parseEther('0.3'))
+        expect(fees0).to.lt(ethers.utils.parseEther('0.305'))
+        console.log("fees: " + fees0.toString())
+        expect(fees1).to.equal(0)
+        // have the positions been updated? Are the token amounts unchanged?
+        basePosition = await hypervisor.getBasePosition()
+        limitPosition = await hypervisor.getLimitPosition()
+        // the base position should have 0 liquidity because we are left with
+        // only a single asset after carol's big swap
+        expect(basePosition[0]).to.equal(0)
+        expect(limitPosition[0]).to.be.gt(0)
+        console.log("limit liq:" + limitPosition[0])
+        console.log("base liq:" + basePosition[0])
+    })
+
 })
