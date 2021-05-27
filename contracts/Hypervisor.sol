@@ -83,17 +83,13 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20 {
             pool.burn(limitLower, limitUpper, 0);
         }
 
-        uint256 price;
-        {
         int24 currentTick = currentTick();
         uint160 sqrtPrice = TickMath.getSqrtRatioAtTick(currentTick);
-        price = uint256(sqrtPrice).mul(uint256(sqrtPrice)).mul(1e18) >> (96 * 2);
-        }
+        uint256 price = uint256(sqrtPrice).mul(uint256(sqrtPrice)).mul(1e18) >> (96 * 2);
 
         (uint256 pool0, uint256 pool1) = getTotalAmounts();
 
         (shares,) = sharesCalculation(price, deposit0, deposit1, pool0, pool1);
-        uint256 pool0PricedInToken1 = pool0.mul(price).div(1e18);
 
         if (deposit0 > 0) {
           token0.safeTransferFrom(msg.sender, address(this), deposit0);
@@ -103,6 +99,7 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20 {
         }
 
         if (totalSupply() != 0) {
+          uint256 pool0PricedInToken1 = pool0.mul(price).div(1e18);
           shares = shares.mul(totalSupply()).div(pool0PricedInToken1.add(pool1));
         }
         _mint(to, shares);
