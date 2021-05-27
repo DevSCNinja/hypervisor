@@ -372,30 +372,6 @@ describe('Hypervisor', () => {
         expect(user3token1Amount.toString()).to.be.equal("0");
         expect(user4token1Amount.toString()).to.be.equal("0");
 
-        /*
-        // swap big amount
-        await token0.connect(other).approve(router.address, ethers.utils.parseEther('500000'));
-        await token1.connect(other).approve(router.address, ethers.utils.parseEther('500000'));
-
-        let token0Liq = await token0.balanceOf(poolAddress)
-        let token1Liq = await token1.balanceOf(poolAddress)
-
-        console.log("token0Liq: " + token0Liq.toString() + "\ntoken1Liq: " + token1Liq.toString())
-        await router.connect(other).exactInputSingle({
-            tokenIn: token0.address,
-            tokenOut: token1.address,
-            fee: FeeAmount.MEDIUM,
-            recipient: other.address,
-            deadline: 2000000000,
-            amountIn: ethers.utils.parseEther('50000'),
-            amountOutMinimum: ethers.utils.parseEther('0'),
-            sqrtPriceLimitX96: 0
-        })
-
-        const { tick: currentTick } = await uniswapPool.slot0();
-        expect(currentTick).to.be.lt(0);
-        */
-
         // rebalance
         await hypervisor.rebalance(-120, 120, 0, 60, bob.address);
 
