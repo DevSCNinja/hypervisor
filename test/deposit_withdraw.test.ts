@@ -301,60 +301,50 @@ describe('Hypervisor', () => {
         console.log("base liq:" + basePosition[0])
     })
 
-    it('fees test', async () => {
-        await hypervisorFactory.createHypervisor(token0.address, token1.address, FeeAmount.MEDIUM, -120, 120, 200, 2000);
-        const hypervisorAddress = await hypervisorFactory.getHypervisor(token0.address, token1.address, FeeAmount.MEDIUM);
-        hypervisor = (await ethers.getContractAt('Hypervisor', hypervisorAddress)) as Hypervisor
-
-        const poolAddress = await factory.getPool(token0.address, token1.address, FeeAmount.MEDIUM);
-        uniswapPool = (await ethers.getContractAt('IUniswapV3Pool', poolAddress)) as IUniswapV3Pool;
-        await uniswapPool.initialize(encodePriceSqrt('1', '1'))
+    it('deposit/withdrawal with many users', async () => {
+        let tokenAmount = ethers.utils.parseEther('10000');
 
         // token mint for liquidity add
+        await token0.mint(user0.address, tokenAmount);
+        await token1.mint(user0.address, tokenAmount);
 
-        await token0.mint(carol.address, ethers.utils.parseEther('100000000'));
-        await token1.mint(carol.address, ethers.utils.parseEther('100000000'));
+        await token0.mint(user1.address, tokenAmount);
+        await token1.mint(user1.address, tokenAmount);
 
-        await token0.mint(user0.address, ethers.utils.parseEther('10000'));
-        await token1.mint(user0.address, ethers.utils.parseEther('10000'));
+        await token0.mint(user2.address, tokenAmount);
+        await token1.mint(user2.address, tokenAmount);
 
-        await token0.mint(user1.address, ethers.utils.parseEther('10000'));
-        await token1.mint(user1.address, ethers.utils.parseEther('10000'));
+        await token0.mint(user3.address, tokenAmount);
+        await token1.mint(user3.address, tokenAmount);
 
-        await token0.mint(user2.address, ethers.utils.parseEther('10000'));
-        await token1.mint(user2.address, ethers.utils.parseEther('10000'));
-
-        await token0.mint(user3.address, ethers.utils.parseEther('10000'));
-        await token1.mint(user3.address, ethers.utils.parseEther('10000'));
-
-        await token0.mint(user4.address, ethers.utils.parseEther('10000'));
-        await token1.mint(user4.address, ethers.utils.parseEther('10000'));
+        await token0.mint(user4.address, tokenAmount);
+        await token1.mint(user4.address, tokenAmount);
 
         await token0.mint(other.address, ethers.utils.parseEther('100000'));
         await token1.mint(other.address, ethers.utils.parseEther('100000'));
 
         // deposit to hypervisor contract
 
-        await token0.connect(user0).approve(hypervisor.address, ethers.utils.parseEther('10000'));
-        await token1.connect(user0).approve(hypervisor.address, ethers.utils.parseEther('10000'));
+        await token0.connect(user0).approve(hypervisor.address, tokenAmount);
+        await token1.connect(user0).approve(hypervisor.address, tokenAmount);
 
-        await token0.connect(user1).approve(hypervisor.address, ethers.utils.parseEther('10000'));
-        await token1.connect(user1).approve(hypervisor.address, ethers.utils.parseEther('10000'));
+        await token0.connect(user1).approve(hypervisor.address, tokenAmount);
+        await token1.connect(user1).approve(hypervisor.address, tokenAmount);
 
-        await token0.connect(user2).approve(hypervisor.address, ethers.utils.parseEther('10000'));
-        await token1.connect(user2).approve(hypervisor.address, ethers.utils.parseEther('10000'));
+        await token0.connect(user2).approve(hypervisor.address, tokenAmount);
+        await token1.connect(user2).approve(hypervisor.address, tokenAmount);
 
-        await token0.connect(user3).approve(hypervisor.address, ethers.utils.parseEther('10000'));
-        await token1.connect(user3).approve(hypervisor.address, ethers.utils.parseEther('10000'));
+        await token0.connect(user3).approve(hypervisor.address, tokenAmount);
+        await token1.connect(user3).approve(hypervisor.address, tokenAmount);
 
-        await token0.connect(user4).approve(hypervisor.address, ethers.utils.parseEther('10000'));
-        await token1.connect(user4).approve(hypervisor.address, ethers.utils.parseEther('10000'));
+        await token0.connect(user4).approve(hypervisor.address, tokenAmount);
+        await token1.connect(user4).approve(hypervisor.address, tokenAmount);
 
-        await hypervisor.connect(user0).deposit(ethers.utils.parseEther('10000'), ethers.utils.parseEther('10000'), user0.address);
-        await hypervisor.connect(user1).deposit(ethers.utils.parseEther('10000'), ethers.utils.parseEther('10000'), user1.address);
-        await hypervisor.connect(user2).deposit(ethers.utils.parseEther('10000'), ethers.utils.parseEther('10000'), user2.address);
-        await hypervisor.connect(user3).deposit(ethers.utils.parseEther('10000'), ethers.utils.parseEther('10000'), user3.address);
-        await hypervisor.connect(user4).deposit(ethers.utils.parseEther('10000'), ethers.utils.parseEther('10000'), user4.address);
+        await hypervisor.connect(user0).deposit(tokenAmount, tokenAmount, user0.address);
+        await hypervisor.connect(user1).deposit(tokenAmount, tokenAmount, user1.address);
+        await hypervisor.connect(user2).deposit(tokenAmount, tokenAmount, user2.address);
+        await hypervisor.connect(user3).deposit(tokenAmount, tokenAmount, user3.address);
+        await hypervisor.connect(user4).deposit(tokenAmount, tokenAmount, user4.address);
 
         let user0token0Amount = await token0.balanceOf(user0.address);
         let user0token1Amount = await token1.balanceOf(user0.address);
@@ -381,6 +371,8 @@ describe('Hypervisor', () => {
         expect(user2token1Amount.toString()).to.be.equal("0");
         expect(user3token1Amount.toString()).to.be.equal("0");
         expect(user4token1Amount.toString()).to.be.equal("0");
+
+        /*
         // swap big amount
         await token0.connect(other).approve(router.address, ethers.utils.parseEther('500000'));
         await token1.connect(other).approve(router.address, ethers.utils.parseEther('500000'));
@@ -389,7 +381,6 @@ describe('Hypervisor', () => {
         let token1Liq = await token1.balanceOf(poolAddress)
 
         console.log("token0Liq: " + token0Liq.toString() + "\ntoken1Liq: " + token1Liq.toString())
-
         await router.connect(other).exactInputSingle({
             tokenIn: token0.address,
             tokenOut: token1.address,
@@ -399,24 +390,16 @@ describe('Hypervisor', () => {
             amountIn: ethers.utils.parseEther('50000'),
             amountOutMinimum: ethers.utils.parseEther('0'),
             sqrtPriceLimitX96: 0
-        })        
+        })
 
         const { tick: currentTick } = await uniswapPool.slot0();
         expect(currentTick).to.be.lt(0);
-
-        token0Liq = await token0.balanceOf(poolAddress)
-        token1Liq = await token1.balanceOf(poolAddress)
-
-        console.log('fee test')
-        console.log("token0Liq: " + token0Liq.toString() + "\ntoken1Liq: " + token1Liq.toString())
-
+        */
 
         // rebalance
-
         await hypervisor.rebalance(-120, 120, 0, 60, bob.address);
 
         // withdraw
-
         const user0_liq_balance = await hypervisor.balanceOf(user0.address);
         const user1_liq_balance = await hypervisor.balanceOf(user1.address);
         const user2_liq_balance = await hypervisor.balanceOf(user2.address);
@@ -444,14 +427,13 @@ describe('Hypervisor', () => {
         user4token0Amount = await token0.balanceOf(user4.address);
         user4token1Amount = await token1.balanceOf(user4.address);
 
-        expect(user0token0Amount.toString()).to.be.equal(user1token0Amount.toString());
-        expect(user1token0Amount.toString()).to.be.equal(user2token0Amount.toString());
-        expect(user2token0Amount.toString()).to.be.equal(user3token0Amount.toString());
-        expect(user3token0Amount.toString()).to.be.equal(user4token0Amount.toString());
-        expect(user0token1Amount.toString()).to.be.equal(user1token1Amount.toString());
-        expect(user1token1Amount.toString()).to.be.equal(user2token1Amount.toString());
-        expect(user2token1Amount.toString()).to.be.equal(user3token1Amount.toString());
-        expect(user3token1Amount.toString()).to.be.equal(user4token1Amount.toString());
-
+        expect(user0token0Amount.sub(tokenAmount).abs().toNumber()).to.be.lte(1);
+        expect(user1token0Amount.sub(tokenAmount).abs().toNumber()).to.be.lte(1);
+        expect(user2token0Amount.sub(tokenAmount).abs().toNumber()).to.be.lte(1);
+        expect(user3token0Amount.sub(tokenAmount).abs().toNumber()).to.be.lte(1);
+        expect(user0token1Amount.sub(tokenAmount).abs().toNumber()).to.be.lte(1);
+        expect(user1token1Amount.sub(tokenAmount).abs().toNumber()).to.be.lte(1);
+        expect(user2token1Amount.sub(tokenAmount).abs().toNumber()).to.be.lte(1);
+        expect(user3token1Amount.sub(tokenAmount).abs().toNumber()).to.be.lte(1);
     })
 })
