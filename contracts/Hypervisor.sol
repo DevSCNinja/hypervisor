@@ -83,18 +83,42 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20 {
             pool.burn(limitLower, limitUpper, 0);
         }
 
-        uint256 price;
-        {
         int24 currentTick = currentTick();
         uint160 sqrtPrice = TickMath.getSqrtRatioAtTick(currentTick);
-        price = uint256(sqrtPrice).mul(uint256(sqrtPrice)).mul(1e18) >> (96 * 2);
+        uint256 price = uint256(sqrtPrice).mul(uint256(sqrtPrice)).mul(1e18) >> (96 * 2);
+
+        (uint256 pool0, uint256 pool1) = getTotalAmounts();
+
+        (shares,) = sharesCalculation(price, deposit0, deposit1, pool0, pool1);
+
+        if (deposit0 > 0) {
+          token0.safeTransferFrom(msg.sender, address(this), deposit0);
+        }
+        if (deposit1 > 0) {
+          token1.safeTransferFrom(msg.sender, address(this), deposit1);
         }
 
+        if (totalSupply() != 0) {
+          uint256 pool0PricedInToken1 = pool0.mul(price).div(1e18);
+          shares = shares.mul(totalSupply()).div(pool0PricedInToken1.add(pool1));
+        }
+        _mint(to, shares);
+        emit Deposit(msg.sender, to, shares, deposit0, deposit1);
+        // Check total supply cap not exceeded. A value of 0 means no limit.
+        require(maxTotalSupply == 0 || totalSupply() <= maxTotalSupply, "maxTotalSupply");
+    }
+
+    function sharesCalculation(
+        uint256 price,
+        uint256 deposit0,
+        uint256 deposit1,
+        uint256 pool0,
+        uint256 pool1
+    ) public returns (uint256 shares, uint256) {
         // tokens which help balance the pool are given 100% of their token1
         // value in liquidity tokens if the deposit worsens the ratio, dock the
         // max - min amount `penaltyPercent`
         uint256 deposit0PricedInToken1 = deposit0.mul(price).div(1e18);
-        (uint256 pool0, uint256 pool1) = getTotalAmounts();
         uint256 pool0PricedInToken1 = pool0.mul(price).div(1e18);
         if (pool0PricedInToken1.add(deposit0PricedInToken1) >= pool1 && deposit0PricedInToken1 > deposit1) {
             shares = reduceByPercent(deposit0PricedInToken1.sub(deposit1), penaltyPercent);
@@ -114,20 +138,7 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20 {
             shares = deposit1.add(deposit0PricedInToken1);
         }
 
-        if (deposit0 > 0) {
-          token0.safeTransferFrom(msg.sender, address(this), deposit0);
-        }
-        if (deposit1 > 0) {
-          token1.safeTransferFrom(msg.sender, address(this), deposit1);
-        }
-
-        if (totalSupply() != 0) {
-          shares = shares.mul(totalSupply()).div(pool0PricedInToken1.add(pool1));
-        }
-        _mint(to, shares);
-        emit Deposit(msg.sender, to, shares, deposit0, deposit1);
-        // Check total supply cap not exceeded. A value of 0 means no limit.
-        require(maxTotalSupply == 0 || totalSupply() <= maxTotalSupply, "maxTotalSupply");
+        return (shares, deposit0PricedInToken1.add(deposit1));
     }
 
     function withdraw(
