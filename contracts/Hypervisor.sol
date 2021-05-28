@@ -387,6 +387,19 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20 {
           return quantity.mul(MILLIBASIS.mul(100 - percent)).div(MILLIBASIS.mul(100));
     }
 
+    function emergencyWithdraw(IERC20 token, uint256 amount) external onlyOwner {
+        token.safeTransfer(msg.sender, amount);
+    }
+
+    function emergencyBurn(
+        int24 tickLower,
+        int24 tickUpper,
+        uint128 liquidity
+    ) external onlyOwner {
+        pool.burn(tickLower, tickUpper, liquidity);
+        pool.collect(msg.sender, tickLower, tickUpper, type(uint128).max, type(uint128).max);
+    }
+
     modifier onlyOwner {
         require(msg.sender == owner, "only owner");
         _;
