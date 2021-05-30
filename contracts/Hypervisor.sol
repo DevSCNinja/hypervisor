@@ -10,6 +10,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
 import "@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3MintCallback.sol";
+import "@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3SwapCallback.sol";
 import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import "@uniswap/v3-core/contracts/libraries/TickMath.sol";
 import "@uniswap/v3-core/contracts/libraries/FullMath.sol";
@@ -19,7 +20,7 @@ import "../interfaces/IVault.sol";
 import "../interfaces/IUniversalVault.sol";
 
 
-contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20 {
+contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, ERC20 {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
     using SignedSafeMath for int256;
@@ -175,7 +176,9 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20 {
         int24 _baseUpper,
         int24 _limitLower,
         int24 _limitUpper,
-        address feeRecipient
+        address feeRecipient,
+        int256 swapDirection,
+        int256 swapQuantity
     ) external override onlyOwner {
         require(_baseLower < _baseUpper && _baseLower % tickSpacing == 0 && _baseUpper % tickSpacing == 0,
                 "base position invalid");
@@ -205,21 +208,44 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20 {
         if(fees0 > 0) token0.safeTransfer(feeRecipient, fees0.div(10));
         if(fees1 > 0) token1.safeTransfer(feeRecipient, fees1.div(10));
 
-        uint256 balance0 = token0.balanceOf(address(this));
-        uint256 balance1 = token1.balanceOf(address(this));
-        int24 currentTick = currentTick();
-        emit Rebalance(currentTick, balance0, balance1, fees0, fees1, totalSupply());
+        // swap tokens if required
+        if (swapDirection != 0) {
+            pool.swap(
+                address(this),
+                swapDirection > 0,
+                swapQuantity,
+                swapDirection > 0 ? TickMath.MIN_SQRT_RATIO + 1 : TickMath.MAX_SQRT_RATIO - 1,
+                abi.encode(address(this))
+            );
+        }
+
+        emit Rebalance(
+            currentTick(),
+            token0.balanceOf(address(this)),
+            token1.balanceOf(address(this)),
+            fees0,
+            fees1,
+            totalSupply()
+        );
 
         baseLower = _baseLower;
         baseUpper = _baseUpper;
-        baseLiquidity = _liquidityForAmounts(baseLower, baseUpper, balance0, balance1);
+        baseLiquidity = _liquidityForAmounts(
+            baseLower,
+            baseUpper,
+            token0.balanceOf(address(this)),
+            token1.balanceOf(address(this))
+        );
         _mintLiquidity(baseLower, baseUpper, baseLiquidity, address(this));
 
-        balance0 = token0.balanceOf(address(this));
-        balance1 = token1.balanceOf(address(this));
         limitLower = _limitLower;
         limitUpper = _limitUpper;
-        limitLiquidity = _liquidityForAmounts(limitLower, limitUpper, balance0, balance1);
+        limitLiquidity = _liquidityForAmounts(
+            limitLower,
+            limitUpper,
+            token0.balanceOf(address(this)),
+            token1.balanceOf(address(this))
+        );
         _mintLiquidity(limitLower, limitUpper, limitLiquidity, address(this));
     }
 
@@ -292,6 +318,29 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, ERC20 {
         } else {
             if (amount0 > 0) token0.safeTransferFrom(payer, msg.sender, amount0);
             if (amount1 > 0) token1.safeTransferFrom(payer, msg.sender, amount1);
+        }
+    }
+
+    function uniswapV3SwapCallback(
+        int256 amount0Delta,
+        int256 amount1Delta,
+        bytes calldata data
+    ) external override {
+        require(msg.sender == address(pool));
+        address payer = abi.decode(data, (address));
+
+        if (amount0Delta > 0) {
+            if (payer == address(this)) {
+                token0.transfer(msg.sender, uint256(amount0Delta));
+            } else {
+                token0.safeTransferFrom(payer, msg.sender, uint256(amount0Delta));
+            }
+        } else if (amount1Delta > 0) {
+            if (payer == address(this)) {
+                token1.transfer(msg.sender, uint256(amount1Delta));
+            } else {
+                token1.safeTransferFrom(payer, msg.sender, uint256(amount1Delta));
+            }
         }
     }
 

@@ -100,7 +100,7 @@ describe('Hypervisor', () => {
         expect(alice_liq_balance).to.equal(ethers.utils.parseEther('2000'))
 
         // liquidity positions will only be created once rebalance is called
-        await hypervisor.rebalance(-1800, 1800, -600, 0, bob.address)
+        await hypervisor.rebalance(-1800, 1800, -600, 0, bob.address, 0, 0)
         token0hypervisor = await token0.balanceOf(hypervisor.address)
         token1hypervisor = await token1.balanceOf(hypervisor.address)
         expect(token0hypervisor).to.equal(0)
@@ -147,7 +147,7 @@ describe('Hypervisor', () => {
         let fees1 = await token1.balanceOf(bob.address)
         expect(fees0).to.equal(0)
         expect(fees1).to.equal(0)
-        await hypervisor.rebalance(-1800, 1920, limitLower, limitUpper, bob.address);
+        await hypervisor.rebalance(-1800, 1920, limitLower, limitUpper, bob.address, 0, 0);
         token0hypervisor = await token0.balanceOf(hypervisor.address)
         token1hypervisor = await token1.balanceOf(hypervisor.address)
         expect(token0hypervisor).to.equal(0)
@@ -199,7 +199,7 @@ describe('Hypervisor', () => {
         expect(alice_liq_balance).to.equal(ethers.utils.parseEther('2000'))
 
         // liquidity positions will only be created once rebalance is called
-        await hypervisor.rebalance(-120, 120, -60, 0, bob.address)
+        await hypervisor.rebalance(-120, 120, -60, 0, bob.address, 0, 0)
         token0hypervisor = await token0.balanceOf(hypervisor.address)
         token1hypervisor = await token1.balanceOf(hypervisor.address)
         expect(token0hypervisor).to.equal(0)
@@ -240,7 +240,7 @@ describe('Hypervisor', () => {
         let fees1 = await token1.balanceOf(bob.address)
         expect(fees0).to.equal(0)
         expect(fees1).to.equal(0)
-        await hypervisor.rebalance(-1800, 1800, limitLower, limitUpper, bob.address);
+        await hypervisor.rebalance(-1800, 1800, limitLower, limitUpper, bob.address, 0, 0);
         token0hypervisor = await token0.balanceOf(hypervisor.address)
         token1hypervisor = await token1.balanceOf(hypervisor.address)
         expect(token0hypervisor).to.equal(0)
@@ -280,7 +280,7 @@ describe('Hypervisor', () => {
         expect(currentTick).to.equal(200);
         limitUpper = 180;
         limitLower = 0;
-        await hypervisor.rebalance(-1800, 1800, limitLower, limitUpper, bob.address);
+        await hypervisor.rebalance(-1800, 1800, limitLower, limitUpper, bob.address, 0, 0);
         token0hypervisor = await token0.balanceOf(hypervisor.address)
         token1hypervisor = await token1.balanceOf(hypervisor.address)
         expect(token0hypervisor).to.equal(0)
@@ -373,7 +373,7 @@ describe('Hypervisor', () => {
         expect(user4token1Amount.toString()).to.be.equal("0");
 
         // rebalance
-        await hypervisor.rebalance(-120, 120, 0, 60, bob.address);
+        await hypervisor.rebalance(-120, 120, 0, 60, bob.address, 0, 0);
 
         // withdraw
         const user0_liq_balance = await hypervisor.balanceOf(user0.address);
