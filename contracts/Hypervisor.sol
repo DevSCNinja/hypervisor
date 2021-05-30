@@ -208,6 +208,15 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
         if(fees0 > 0) token0.safeTransfer(feeRecipient, fees0.div(10));
         if(fees1 > 0) token1.safeTransfer(feeRecipient, fees1.div(10));
 
+        emit Rebalance(
+            currentTick(),
+            token0.balanceOf(address(this)),
+            token1.balanceOf(address(this)),
+            fees0,
+            fees1,
+            totalSupply()
+        );
+
         // swap tokens if required
         if (swapDirection != 0) {
             pool.swap(
@@ -218,15 +227,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
                 abi.encode(address(this))
             );
         }
-
-        emit Rebalance(
-            currentTick(),
-            token0.balanceOf(address(this)),
-            token1.balanceOf(address(this)),
-            fees0,
-            fees1,
-            totalSupply()
-        );
 
         baseLower = _baseLower;
         baseUpper = _baseUpper;
