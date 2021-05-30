@@ -142,12 +142,16 @@ describe('Hypervisor', () => {
         let limitUpper = -60
         let limitLower = -540
         resp = await hypervisor.getTotalAmounts()
-
+        let token0BeforeRebalanceSwap = resp[0];
         let fees0 = await token0.balanceOf(bob.address)
         let fees1 = await token1.balanceOf(bob.address)
         expect(fees0).to.equal(0)
         expect(fees1).to.equal(0)
-        await hypervisor.rebalance(-1800, 1920, limitLower, limitUpper, bob.address, 0, 0);
+        let rebalanceSwapAmount = ethers.utils.parseEther('4000');
+        await hypervisor.rebalance(-1800, 1920, limitLower, limitUpper, bob.address, 1, rebalanceSwapAmount);
+        resp = await hypervisor.getTotalAmounts()
+        let token0AfterRebalanceSwap = resp[0];
+        expect(token0BeforeRebalanceSwap.sub(token0AfterRebalanceSwap).sub(rebalanceSwapAmount).abs()).to.be.lt(ethers.utils.parseEther('1'));
         token0hypervisor = await token0.balanceOf(hypervisor.address)
         token1hypervisor = await token1.balanceOf(hypervisor.address)
         expect(token0hypervisor).to.equal(0)
@@ -261,7 +265,6 @@ describe('Hypervisor', () => {
         expect(limitPosition[0]).to.be.gt(0)
         console.log("limit liq:" + limitPosition[0])
         console.log("base liq:" + basePosition[0])
-
 
         // swap everything back and check fees in the other token have
         // been earned
