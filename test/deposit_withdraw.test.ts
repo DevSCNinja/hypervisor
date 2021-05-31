@@ -120,8 +120,8 @@ describe('Hypervisor', () => {
         console.log("alice liq balance: " + alice_liq_balance)
         expect(alice_liq_balance).to.gt(ethers.utils.parseEther('6940'))
         expect(alice_liq_balance).to.lt(ethers.utils.parseEther('6941'))
-        let resp = await hypervisor.getTotalAmounts()
-        console.log("totalAmounts: " + resp)
+        let tokenAmounts = await hypervisor.getTotalAmounts()
+        console.log("totalAmounts: " + tokenAmounts)
 
         await hypervisor.connect(alice).deposit(ethers.utils.parseEther('2000'), ethers.utils.parseEther('1000'), alice.address)
 
@@ -141,17 +141,17 @@ describe('Hypervisor', () => {
 
         let limitUpper = -60
         let limitLower = -540
-        resp = await hypervisor.getTotalAmounts()
-        let token0BeforeRebalanceSwap = resp[0];
-        let token1BeforeRebalanceSwap = resp[1];
+        tokenAmounts = await hypervisor.getTotalAmounts()
+        let token0BeforeRebalanceSwap = tokenAmounts[0];
+        let token1BeforeRebalanceSwap = tokenAmounts[1];
         let fees0 = await token0.balanceOf(bob.address)
         let fees1 = await token1.balanceOf(bob.address)
         expect(fees0).to.equal(0)
         expect(fees1).to.equal(0)
         let rebalanceSwapAmount = ethers.utils.parseEther('4000');
         await hypervisor.rebalance(-1800, 1920, limitLower, limitUpper, bob.address, rebalanceSwapAmount);
-        resp = await hypervisor.getTotalAmounts()
-        let token0AfterRebalanceSwap = resp[0];
+        tokenAmounts = await hypervisor.getTotalAmounts()
+        let token0AfterRebalanceSwap = tokenAmounts[0];
         expect(token0BeforeRebalanceSwap.sub(token0AfterRebalanceSwap).sub(rebalanceSwapAmount).abs()).to.be.lt(ethers.utils.parseEther('1'));
         token0hypervisor = await token0.balanceOf(hypervisor.address)
         token1hypervisor = await token1.balanceOf(hypervisor.address)
@@ -171,18 +171,20 @@ describe('Hypervisor', () => {
         console.log("base liq:" + basePosition[0])
 
         await hypervisor.rebalance(-1800, 1920, limitLower, limitUpper, bob.address, rebalanceSwapAmount.mul(-1));
-        resp = await hypervisor.getTotalAmounts()
-        expect(resp[0].sub(token0BeforeRebalanceSwap).abs()).to.be.lt(ethers.utils.parseEther('15'));
-        expect(resp[1].sub(token1BeforeRebalanceSwap).abs()).to.be.lt(ethers.utils.parseEther('15'));
+        tokenAmounts = await hypervisor.getTotalAmounts();
+        let token0AfterSecondRebalance = tokenAmounts[0];
+        let token1AfterSecondRebalance = tokenAmounts[1];
+        expect(token0AfterSecondRebalance.sub(token0BeforeRebalanceSwap).abs()).to.be.lt(ethers.utils.parseEther('15'));
+        expect(token1AfterSecondRebalance.sub(token1BeforeRebalanceSwap).abs()).to.be.lt(ethers.utils.parseEther('15'));
 
         // test withdrawal of liquidity
         alice_liq_balance = await hypervisor.balanceOf(alice.address)
         console.log("alice liq balance: " + alice_liq_balance)
         await hypervisor.connect(alice).withdraw(alice_liq_balance, alice.address, alice.address)
-        resp = await hypervisor.getTotalAmounts()
+        tokenAmounts = await hypervisor.getTotalAmounts()
         // verify that all liquidity has been removed from the pool
-        expect(resp[0]).to.equal(0)
-        expect(resp[1]).to.equal(0)
+        expect(tokenAmounts[0]).to.equal(0)
+        expect(tokenAmounts[1]).to.equal(0)
     })
 
     it('calculates fees properly & rebalances to limit-only after large swap', async () => {
@@ -220,9 +222,9 @@ describe('Hypervisor', () => {
         expect(basePosition[0]).to.be.gt(0);
         expect(limitPosition[0]).to.be.equal(0);
 
-        let resp = await hypervisor.getTotalAmounts()
-        expect(resp[0] === resp[1])
-        console.log("totalAmounts: " + resp)
+        let tokenAmounts = await hypervisor.getTotalAmounts()
+        expect(tokenAmounts[0] === tokenAmounts[1])
+        console.log("totalAmounts: " + tokenAmounts)
 
         // do a test swap
         await token0.connect(carol).approve(router.address, ethers.utils.parseEther('10000000000'))
@@ -240,8 +242,8 @@ describe('Hypervisor', () => {
 
         let limitUpper = 0
         let limitLower = -180
-        resp = await hypervisor.getTotalAmounts()
-        expect(resp[0] > resp[1])
+        tokenAmounts = await hypervisor.getTotalAmounts()
+        expect(tokenAmounts[0] > tokenAmounts[1])
         let currentTick = await hypervisor.currentTick();
         // this is beyond the bounds of the original base position
         expect(currentTick).to.equal(-199);
