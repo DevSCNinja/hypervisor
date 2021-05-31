@@ -21,7 +21,6 @@ interface IVault {
         int24 _limitLower,
         int24 _limitUpper,
         address feeRecipient,
-        int256 swapDirection,
         int256 swapQuantity
     ) external;
 
