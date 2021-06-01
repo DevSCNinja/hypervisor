@@ -91,11 +91,9 @@ describe('Hypervisor', () => {
         // alice should start with 0 hypervisor tokens
         let alice_liq_balance = await hypervisor.balanceOf(alice.address)
         expect(alice_liq_balance).to.equal(0)
-        /*
-        expect(await hypervisor.connect(alice).deposit(ethers.utils.parseEther('100000'), 0, alice.address)).to.be.reverted
-        expect(await hypervisor.connect(alice).deposit(0, ethers.utils.parseEther('100000'), alice.address)).to.be.reverted
-        expect(await hypervisor.connect(alice).deposit(ethers.utils.parseEther('100000'), ethers.utils.parseEther('100000'), alice.address)).to.be.reverted
-        */
+        await expect(hypervisor.connect(alice).deposit(ethers.utils.parseEther('100000'), 0, alice.address)).to.be.reverted
+        await expect(hypervisor.connect(alice).deposit(0, ethers.utils.parseEther('200000'), alice.address)).to.be.reverted
+        await expect(hypervisor.connect(alice).deposit(ethers.utils.parseEther('100000'), ethers.utils.parseEther('100000'), alice.address)).to.be.reverted
 
         await hypervisor.connect(alice).deposit(ethers.utils.parseEther('1000'), ethers.utils.parseEther('1000'), alice.address)
 
