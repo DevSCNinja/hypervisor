@@ -76,7 +76,7 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
         address to
     ) external override returns (uint256 shares) {
         require(deposit0 > 0 || deposit1 > 0, "deposits must be nonzero");
-        require(deposit0 < deposit0Max || deposit1 < deposit1Max, "deposits must be less than maximum amounts");
+        require(deposit0 < deposit0Max && deposit1 < deposit1Max, "deposits must be less than maximum amounts");
         require(to != address(0) && to != address(this), "to");
 
         // update fess for inclusion in total pool amounts

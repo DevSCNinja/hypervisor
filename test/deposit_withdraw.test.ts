@@ -1,7 +1,11 @@
 import { ethers, waffle } from 'hardhat'
 import { BigNumber, BigNumberish, constants } from 'ethers'
+import chai from 'chai'
 import { expect } from 'chai'
 import { fixture, hypervisorTestFixture } from "./shared/fixtures"
+import { solidity } from "ethereum-waffle";
+
+chai.use(solidity);
 
 import {
     FeeAmount,
@@ -52,6 +56,7 @@ describe('Hypervisor', () => {
         const poolAddress = await factory.getPool(token0.address, token1.address, FeeAmount.MEDIUM)
         uniswapPool = (await ethers.getContractAt('IUniswapV3Pool', poolAddress)) as IUniswapV3Pool
         await uniswapPool.initialize(encodePriceSqrt('1', '1'))
+        await hypervisor.setDepositMax(ethers.utils.parseEther('100000'), ethers.utils.parseEther('100000'));
 
         // adding extraliquidity into pool to make sure there's always
         // someone to swap with
@@ -86,6 +91,11 @@ describe('Hypervisor', () => {
         // alice should start with 0 hypervisor tokens
         let alice_liq_balance = await hypervisor.balanceOf(alice.address)
         expect(alice_liq_balance).to.equal(0)
+        /*
+        expect(await hypervisor.connect(alice).deposit(ethers.utils.parseEther('100000'), 0, alice.address)).to.be.reverted
+        expect(await hypervisor.connect(alice).deposit(0, ethers.utils.parseEther('100000'), alice.address)).to.be.reverted
+        expect(await hypervisor.connect(alice).deposit(ethers.utils.parseEther('100000'), ethers.utils.parseEther('100000'), alice.address)).to.be.reverted
+        */
 
         await hypervisor.connect(alice).deposit(ethers.utils.parseEther('1000'), ethers.utils.parseEther('1000'), alice.address)
 
