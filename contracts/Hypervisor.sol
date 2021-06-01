@@ -39,6 +39,8 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
     int24 public limitUpper;
 
     address public owner;
+    uint256 public deposit0Max;
+    uint256 public deposit1Max;
     uint256 public maxTotalSupply;
     uint256 public penaltyPercent;
 
@@ -63,6 +65,8 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
         limitLower =  _limitLower;
         limitUpper =  _limitUpper;
         maxTotalSupply = 0; // no cap
+        deposit0Max = uint256(-1);
+        deposit1Max = uint256(-1);
         penaltyPercent = 2;
     }
 
@@ -72,6 +76,7 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
         address to
     ) external override returns (uint256 shares) {
         require(deposit0 > 0 || deposit1 > 0, "deposits must be nonzero");
+        require(deposit0 < deposit0Max || deposit1 < deposit1Max, "deposits must be less than maximum amounts");
         require(to != address(0) && to != address(this), "to");
 
         // update fess for inclusion in total pool amounts
@@ -425,6 +430,11 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
 
     function setMaxTotalSupply(uint256 _maxTotalSupply) external onlyOwner {
         maxTotalSupply = _maxTotalSupply;
+    }
+
+    function setDepositMax(uint256 _deposit0Max, uint256 _deposit1Max) external onlyOwner {
+        deposit0Max = _deposit0Max;
+        deposit1Max = _deposit1Max;
     }
 
     function setPenaltyPercent(uint256 _penaltyPercent) external onlyOwner {
