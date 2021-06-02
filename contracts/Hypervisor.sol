@@ -155,20 +155,21 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
         require(shares > 0, "shares");
         require(to != address(0), "to");
 
-        {
-            // Calculate how much liquidity to withdraw
-            uint128 baseLiquidity = _liquidityForShares(baseLower, baseUpper, shares);
-            uint128 limitLiquidity = _liquidityForShares(limitLower, limitUpper, shares);
+        // Withdraw liquidity from Uniswap pool
+        (uint256 base0, uint256 base1) =
+            _burnLiquidity(baseLower, baseUpper, _liquidityForShares(baseLower, baseUpper, shares), to, false);
+        (uint256 limit0, uint256 limit1) =
+            _burnLiquidity(limitLower, limitUpper, _liquidityForShares(limitLower, limitUpper, shares), to, false);
 
-            // Withdraw liquidity from Uniswap pool
-            (uint256 base0, uint256 base1) =
-                _burnLiquidity(baseLower, baseUpper, baseLiquidity, to, false);
-            (uint256 limit0, uint256 limit1) =
-                _burnLiquidity(limitLower, limitUpper, limitLiquidity, to, false);
+        // Push tokens proportional to unused balances
+        uint256 totalSupply = totalSupply();
+        uint256 unusedAmount0 = token0.balanceOf(address(this)).mul(shares).div(totalSupply);
+        uint256 unusedAmount1 = token1.balanceOf(address(this)).mul(shares).div(totalSupply);
+        if (unusedAmount0 > 0) token0.safeTransfer(to, unusedAmount0);
+        if (unusedAmount1 > 0) token1.safeTransfer(to, unusedAmount1);
 
-            amount0 = base0.add(limit0);
-            amount1 = base1.add(limit1);
-        }
+        amount0 = base0.add(limit0).add(unusedAmount0);
+        amount1 = base1.add(limit1).add(unusedAmount1);
 
         require(from == msg.sender || IUniversalVault(from).owner() == msg.sender, "Sender must own the tokens");
         _burn(from, shares);
