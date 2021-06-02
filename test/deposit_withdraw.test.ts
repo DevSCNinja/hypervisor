@@ -451,5 +451,35 @@ describe('Hypervisor', () => {
         // verify that all liquidity has been removed from the pool
         expect(tokenAmounts[0]).to.equal(0)
         expect(tokenAmounts[1]).to.equal(0)
+
+        await hypervisor.connect(alice).deposit(ethers.utils.parseEther('1000'), ethers.utils.parseEther('1000'), alice.address)
+
+        await hypervisor.rebalance(-120, 120, 0, 60, bob.address, 0);
+
+        let tokenAmount = ethers.utils.parseEther('1000');
+
+        await token0.mint(user0.address, tokenAmount);
+        await token1.mint(user0.address, tokenAmount);
+        await token0.connect(user0).approve(hypervisor.address, tokenAmount);
+        await token1.connect(user0).approve(hypervisor.address, tokenAmount);
+        await hypervisor.connect(user0).deposit(tokenAmount, tokenAmount, user0.address);
+        let token0Balance = await token0.balanceOf(user0.address);
+        let token1Balance = await token1.balanceOf(user0.address);
+        expect(token0Balance).to.equal(0)
+        expect(token1Balance).to.equal(0)
+
+        const user0_liq_balance = await hypervisor.balanceOf(user0.address);
+        tokenAmounts = await hypervisor.getTotalAmounts()
+        // verify that all liquidity has been removed from the pool
+        expect(tokenAmounts[0]).to.be.gte(ethers.utils.parseEther('1999'))
+        expect(tokenAmounts[1]).to.be.gte(ethers.utils.parseEther('1999'))
+        expect(tokenAmounts[0]).to.be.lt(ethers.utils.parseEther('2001'))
+        expect(tokenAmounts[1]).to.be.lt(ethers.utils.parseEther('2001'))
+
+        await hypervisor.connect(user0).withdraw(user0_liq_balance, user0.address, user0.address);
+        token0Balance = await token0.balanceOf(user0.address);
+        token1Balance = await token1.balanceOf(user0.address);
+        expect(token0Balance).to.equal(ethers.utils.parseEther('1000'))
+        expect(token1Balance).to.equal(ethers.utils.parseEther('1000'))
     })
 })
