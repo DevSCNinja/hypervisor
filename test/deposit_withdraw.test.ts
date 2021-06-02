@@ -431,4 +431,25 @@ describe('Hypervisor', () => {
         expect(user2token1Amount.sub(tokenAmount).abs().toNumber()).to.be.lte(1);
         expect(user3token1Amount.sub(tokenAmount).abs().toNumber()).to.be.lte(1);
     })
+
+    it('can withdraw deposited funds without rebalance', async () => {
+        await token0.mint(alice.address, ethers.utils.parseEther('1000000'))
+        await token1.mint(alice.address, ethers.utils.parseEther('1000000'))
+
+        await token0.connect(alice).approve(hypervisor.address, ethers.utils.parseEther('1000000'))
+        await token1.connect(alice).approve(hypervisor.address, ethers.utils.parseEther('1000000'))
+
+        // alice should start with 0 hypervisor tokens
+        let alice_liq_balance = await hypervisor.balanceOf(alice.address)
+        expect(alice_liq_balance).to.equal(0)
+
+        await hypervisor.connect(alice).deposit(ethers.utils.parseEther('1000'), ethers.utils.parseEther('1000'), alice.address)
+        alice_liq_balance = await hypervisor.balanceOf(alice.address)
+        expect(alice_liq_balance).to.equal(ethers.utils.parseEther('2000'))
+        await hypervisor.connect(alice).withdraw(alice_liq_balance, alice.address, alice.address)
+        let tokenAmounts = await hypervisor.getTotalAmounts()
+        // verify that all liquidity has been removed from the pool
+        expect(tokenAmounts[0]).to.equal(0)
+        expect(tokenAmounts[1]).to.equal(0)
+    })
 })
