@@ -25,8 +25,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
     using SafeMath for uint256;
     using SignedSafeMath for int256;
 
-    uint256 public constant MILLIBASIS = 100000;
-
     IUniswapV3Pool public pool;
     IERC20 public token0;
     IERC20 public token1;
@@ -42,7 +40,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
     uint256 public deposit0Max;
     uint256 public deposit1Max;
     uint256 public maxTotalSupply;
-    uint256 public penaltyPercent;
 
     constructor(
         address _pool,
@@ -67,7 +64,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
         maxTotalSupply = 0; // no cap
         deposit0Max = uint256(-1);
         deposit1Max = uint256(-1);
-        penaltyPercent = 2;
     }
 
     function deposit(
@@ -404,14 +400,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
     function setDepositMax(uint256 _deposit0Max, uint256 _deposit1Max) external onlyOwner {
         deposit0Max = _deposit0Max;
         deposit1Max = _deposit1Max;
-    }
-
-    function setPenaltyPercent(uint256 _penaltyPercent) external onlyOwner {
-        penaltyPercent = _penaltyPercent;
-    }
-
-    function reduceByPercent(uint256 quantity, uint256 percent) internal view returns (uint256) {
-          return quantity.mul(MILLIBASIS.mul(100 - percent)).div(MILLIBASIS.mul(100));
     }
 
     function emergencyWithdraw(IERC20 token, uint256 amount) external onlyOwner {
