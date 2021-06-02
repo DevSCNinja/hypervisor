@@ -126,8 +126,8 @@ describe('Hypervisor', () => {
         expect(token1hypervisor).to.equal(ethers.utils.parseEther('4000'))
         alice_liq_balance = await hypervisor.balanceOf(alice.address)
         console.log("alice liq balance: " + alice_liq_balance)
-        expect(alice_liq_balance).to.gt(ethers.utils.parseEther('6940'))
-        expect(alice_liq_balance).to.lt(ethers.utils.parseEther('6941'))
+        expect(alice_liq_balance).to.lt(ethers.utils.parseEther('7001'))
+        expect(alice_liq_balance).to.gt(ethers.utils.parseEther('6999'))
         let tokenAmounts = await hypervisor.getTotalAmounts()
         console.log("totalAmounts: " + tokenAmounts)
 
