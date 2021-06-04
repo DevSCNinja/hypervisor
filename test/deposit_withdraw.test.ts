@@ -553,8 +553,9 @@ describe('ETHUSDT Hypervisor', () => {
         await hypervisor.connect(user1).deposit(ethers.utils.parseEther('1'), 2500000000, user1.address)
 
         let user1LiquidityBalance = await hypervisor.balanceOf(user1.address)
-        expect(user1LiquidityBalance).to.be.gt(4999500000)
-        expect(user1LiquidityBalance).to.be.lt(5000010000)
+        let expectedValue = 5000010000
+        expect(user1LiquidityBalance).to.be.gt(Math.round(expectedValue*0.999))
+        expect(user1LiquidityBalance).to.be.lt(Math.round(expectedValue*1.001))
 
         // deposit & withdraw liquidity with ETH & USDT balanced
         await token0.mint(user2.address, ethers.utils.parseEther('0.5'))
@@ -564,8 +565,9 @@ describe('ETHUSDT Hypervisor', () => {
 
         await hypervisor.connect(user2).deposit(ethers.utils.parseEther('0.5'), 1250000000, user2.address)
         let user2LiquidityBalance = await hypervisor.balanceOf(user2.address)
-        expect(user2LiquidityBalance).to.be.gt(2499500000)
-        expect(user2LiquidityBalance).to.be.lt(2500010000)
+        expectedValue = 2500000000
+        expect(user2LiquidityBalance).to.be.gt(Math.round(expectedValue*0.999))
+        expect(user2LiquidityBalance).to.be.lt(Math.round(expectedValue*1.001))
 
         await hypervisor.connect(user2).withdraw(user2LiquidityBalance, user2.address, user2.address)
 
