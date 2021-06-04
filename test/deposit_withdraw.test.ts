@@ -483,6 +483,65 @@ describe('Hypervisor', () => {
         expect(token1Balance).to.equal(ethers.utils.parseEther('1000'))
     })
 
-    it('can handle ethusdt type contracts', async () => {
+})
+
+describe('ETHUSDT Hypervisor', () => {
+    const [wallet, alice, bob, carol, other,
+           user0, user1, user2, user3, user4] = waffle.provider.getWallets()
+
+    let factory: UniswapV3Factory
+    let router: SwapRouter
+    let nft: NonfungiblePositionManager
+    let token0: TestERC20
+    let token1: TestERC20
+    let token2: TestERC20
+    let uniswapPool: IUniswapV3Pool
+    let hypervisorFactory: HypervisorFactory
+    let hypervisor: Hypervisor
+
+    let loadFixture: ReturnType<typeof createFixtureLoader>
+    before('create fixture loader', async () => {
+        loadFixture = createFixtureLoader([wallet, other])
+    })
+
+    beforeEach('deploy contracts', async () => {
+        ({ token0, token1, token2, factory, router, nft, hypervisorFactory } = await loadFixture(hypervisorTestFixture))
+        await hypervisorFactory.createHypervisor(token0.address, token1.address, FeeAmount.MEDIUM,-1800, 1800, -600, 0)
+        const hypervisorAddress = await hypervisorFactory.getHypervisor(token0.address, token1.address, FeeAmount.MEDIUM)
+        hypervisor = (await ethers.getContractAt('Hypervisor', hypervisorAddress)) as Hypervisor
+
+        const poolAddress = await factory.getPool(token0.address, token1.address, FeeAmount.MEDIUM)
+        uniswapPool = (await ethers.getContractAt('IUniswapV3Pool', poolAddress)) as IUniswapV3Pool
+        // initializing the pool to mimick the tick that an ETH (18 decimals)
+        // - USDT (6 decimals) pool would have if ETH were priced at $2500
+        await uniswapPool.initialize(encodePriceSqrt(2500000000, ethers.utils.parseEther('1')))
+        await hypervisor.setDepositMax(ethers.utils.parseEther('100000'), ethers.utils.parseEther('100000'))
+
+        // adding extra liquidity into pool to make sure there's always
+        // someone to swap with
+        await token0.mint(carol.address, ethers.utils.parseEther('1000000000000'))
+        await token1.mint(carol.address, ethers.utils.parseEther('1000000000000'))
+
+        await token0.connect(carol).approve(nft.address, ethers.utils.parseEther('10000000000'))
+        await token1.connect(carol).approve(nft.address, ethers.utils.parseEther('10000000000'))
+
+        await nft.connect(carol).mint({
+            token0: token0.address,
+            token1: token1.address,
+            tickLower: getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+            tickUpper: getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+            fee: FeeAmount.MEDIUM,
+            recipient: carol.address,
+            amount0Desired: ethers.utils.parseEther('10000000000'),
+            amount1Desired: ethers.utils.parseEther('10000000000'),
+            amount0Min: 0,
+            amount1Min: 0,
+            deadline: 2000000000,
+        })
+    })
+
+    it('can handle ethusdt-type pools', async () => {
+        let slot0 = await uniswapPool.slot0()
+        expect(slot0.tick).to.equal(-198080)
     })
 })
