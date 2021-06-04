@@ -486,8 +486,7 @@ describe('Hypervisor', () => {
 })
 
 describe('ETHUSDT Hypervisor', () => {
-    const [wallet, alice, bob, carol, other,
-           user0, user1, user2, user3, user4] = waffle.provider.getWallets()
+    const [wallet, other, user0, user1, user2, user3, user4, user5] = waffle.provider.getWallets()
 
     let factory: UniswapV3Factory
     let router: SwapRouter
@@ -519,19 +518,19 @@ describe('ETHUSDT Hypervisor', () => {
 
         // adding extra liquidity into pool to make sure there's always
         // someone to swap with
-        await token0.mint(carol.address, ethers.utils.parseEther('1000000000000'))
-        await token1.mint(carol.address, ethers.utils.parseEther('1000000000000'))
+        await token0.mint(user0.address, ethers.utils.parseEther('1000000000000'))
+        await token1.mint(user0.address, ethers.utils.parseEther('1000000000000'))
 
-        await token0.connect(carol).approve(nft.address, ethers.utils.parseEther('10000000000'))
-        await token1.connect(carol).approve(nft.address, ethers.utils.parseEther('10000000000'))
+        await token0.connect(user0).approve(nft.address, ethers.utils.parseEther('10000000000'))
+        await token1.connect(user0).approve(nft.address, ethers.utils.parseEther('10000000000'))
 
-        await nft.connect(carol).mint({
+        await nft.connect(user0).mint({
             token0: token0.address,
             token1: token1.address,
             tickLower: getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
             tickUpper: getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
             fee: FeeAmount.MEDIUM,
-            recipient: carol.address,
+            recipient: user0.address,
             amount0Desired: ethers.utils.parseEther('10000000000'),
             amount1Desired: ethers.utils.parseEther('10000000000'),
             amount0Min: 0,
@@ -543,5 +542,45 @@ describe('ETHUSDT Hypervisor', () => {
     it('can handle ethusdt-type pools', async () => {
         let slot0 = await uniswapPool.slot0()
         expect(slot0.tick).to.equal(-198080)
+
+        // create a balanced base deposit
+        await token0.mint(user1.address, ethers.utils.parseEther('1000000'))
+        await token1.mint(user1.address, ethers.utils.parseEther('1000000'))
+
+        await token0.connect(user1).approve(hypervisor.address, ethers.utils.parseEther('1000000'))
+        await token1.connect(user1).approve(hypervisor.address, ethers.utils.parseEther('1000000'))
+
+        await hypervisor.connect(user1).deposit(ethers.utils.parseEther('1'), 2500000000, user1.address)
+
+        let user1LiquidityBalance = await hypervisor.balanceOf(user1.address)
+        expect(user1LiquidityBalance).to.be.gt(4999500000)
+        expect(user1LiquidityBalance).to.be.lt(5000010000)
+
+        // deposit & withdraw liquidity with ETH & USDT balanced
+        // deposit & withdraw liquidity with ETH overweight
+        // deposit & withdraw liquidity with USDT overweight
+
+        // add a deposit of just ETH
+        await hypervisor.connect(user1).deposit(ethers.utils.parseEther('1'), 0, user1.address)
+
+        user1LiquidityBalance = await hypervisor.balanceOf(user1.address)
+        expect(user1LiquidityBalance).to.be.gt(7499500000)
+        expect(user1LiquidityBalance).to.be.lt(7500100000)
+
+        // deposit & withdraw liquidity with ETH & USDT balanced
+        // deposit & withdraw liquidity with ETH overweight
+        // deposit & withdraw liquidity with USDT overweight
+
+        // add a deposit of just USDT, flipping the balance of the pool to be
+        // overweight USDT
+        await hypervisor.connect(user1).deposit(0, 6500000000, user1.address)
+
+        user1LiquidityBalance = await hypervisor.balanceOf(user1.address)
+        expect(user1LiquidityBalance).to.be.gt(13999500000)
+        expect(user1LiquidityBalance).to.be.lt(14000010000)
+
+        // deposit & withdraw liquidity with ETH & USDT balanced
+        // deposit & withdraw liquidity with ETH overweight
+        // deposit & withdraw liquidity with USDT overweight
     })
 })
