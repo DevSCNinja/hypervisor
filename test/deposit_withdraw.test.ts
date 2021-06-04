@@ -597,6 +597,23 @@ describe('ETHUSDT Hypervisor', () => {
         expect(user3usdtBalance).to.be.gt(499900000)
 
         // deposit & withdraw liquidity with USDT overweight
+        let singleSidedUSDTAmount = 1000000000
+        await token1.mint(user4.address, singleSidedUSDTAmount)
+        await token1.connect(user4).approve(hypervisor.address, singleSidedUSDTAmount)
+
+        await hypervisor.connect(user4).deposit(0, singleSidedUSDTAmount, user4.address)
+        let user4LiquidityBalance = await hypervisor.balanceOf(user4.address)
+        expect(user4LiquidityBalance).to.be.gt(Math.round(singleSidedUSDTAmount*0.999))
+        expect(user4LiquidityBalance).to.be.lt(Math.round(singleSidedUSDTAmount*1.001))
+
+        await hypervisor.connect(user4).withdraw(user4LiquidityBalance, user4.address, user4.address)
+
+        let user4ethBalance = await token0.balanceOf(user4.address)
+        let user4usdtBalance = await token1.balanceOf(user4.address)
+        expect(user4ethBalance).to.be.lt(ethers.utils.parseEther('0.201'))
+        expect(user4ethBalance).to.be.gt(ethers.utils.parseEther('0.199'))
+        expect(user4usdtBalance).to.be.lt(500100000)
+        expect(user4usdtBalance).to.be.gt(499900000)
 
         // add a deposit of just ETH
         await hypervisor.connect(user1).deposit(ethers.utils.parseEther('1'), 0, user1.address)
