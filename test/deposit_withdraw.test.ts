@@ -539,7 +539,7 @@ describe('ETHUSDT Hypervisor', () => {
         })
     })
 
-    it('can handle ethusdt-type pools', async () => {
+    it('handles deposit / withdrawal from pools of different balances', async () => {
         let slot0 = await uniswapPool.slot0()
         expect(slot0.tick).to.equal(-198080)
 
@@ -557,7 +557,27 @@ describe('ETHUSDT Hypervisor', () => {
         expect(user1LiquidityBalance).to.be.lt(5000010000)
 
         // deposit & withdraw liquidity with ETH & USDT balanced
+        await token0.mint(user2.address, ethers.utils.parseEther('0.5'))
+        await token1.mint(user2.address, 1250000000)
+        await token0.connect(user2).approve(hypervisor.address, ethers.utils.parseEther('0.5'))
+        await token1.connect(user2).approve(hypervisor.address, 1250000000)
+
+        await hypervisor.connect(user2).deposit(ethers.utils.parseEther('0.5'), 1250000000, user2.address)
+        let user2LiquidityBalance = await hypervisor.balanceOf(user2.address)
+        expect(user2LiquidityBalance).to.be.gt(2499500000)
+        expect(user2LiquidityBalance).to.be.lt(2500010000)
+
+        await hypervisor.connect(user2).withdraw(user2LiquidityBalance, user2.address, user2.address)
+
+        let user2ethBalance = await token0.balanceOf(user2.address)
+        let user2usdtBalance = await token1.balanceOf(user2.address)
+        expect(user2ethBalance).to.be.lt(ethers.utils.parseEther('0.501'))
+        expect(user2ethBalance).to.be.gt(ethers.utils.parseEther('0.499'))
+        expect(user2usdtBalance).to.be.lt(1250100000)
+        expect(user2usdtBalance).to.be.gt(1249900000)
+
         // deposit & withdraw liquidity with ETH overweight
+
         // deposit & withdraw liquidity with USDT overweight
 
         // add a deposit of just ETH
@@ -582,5 +602,8 @@ describe('ETHUSDT Hypervisor', () => {
         // deposit & withdraw liquidity with ETH & USDT balanced
         // deposit & withdraw liquidity with ETH overweight
         // deposit & withdraw liquidity with USDT overweight
+    })
+
+    it('handles deposit / withdrawal from pools of different balances with swapping', async () => {
     })
 })
