@@ -25,8 +25,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
     using SafeMath for uint256;
     using SignedSafeMath for int256;
 
-    uint256 public constant MILLIBASIS = 100000;
-
     IUniswapV3Pool public pool;
     IERC20 public token0;
     IERC20 public token1;
@@ -42,7 +40,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
     uint256 public deposit0Max;
     uint256 public deposit1Max;
     uint256 public maxTotalSupply;
-    uint256 public penaltyPercent;
 
     constructor(
         address _pool,
@@ -67,7 +64,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
         maxTotalSupply = 0; // no cap
         deposit0Max = uint256(-1);
         deposit1Max = uint256(-1);
-        penaltyPercent = 2;
     }
 
     function deposit(
@@ -95,7 +91,8 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
 
         (uint256 pool0, uint256 pool1) = getTotalAmounts();
 
-        (shares,) = sharesCalculation(price, deposit0, deposit1, pool0, pool1);
+        uint256 deposit0PricedInToken1 = deposit0.mul(price).div(1e18);
+        shares = deposit1.add(deposit0PricedInToken1);
 
         if (deposit0 > 0) {
           token0.safeTransferFrom(msg.sender, address(this), deposit0);
@@ -112,39 +109,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
         emit Deposit(msg.sender, to, shares, deposit0, deposit1);
         // Check total supply cap not exceeded. A value of 0 means no limit.
         require(maxTotalSupply == 0 || totalSupply() <= maxTotalSupply, "maxTotalSupply");
-    }
-
-    function sharesCalculation(
-        uint256 price,
-        uint256 deposit0,
-        uint256 deposit1,
-        uint256 pool0,
-        uint256 pool1
-    ) public returns (uint256 shares, uint256) {
-        // tokens which help balance the pool are given 100% of their token1
-        // value in liquidity tokens if the deposit worsens the ratio, dock the
-        // max - min amount `penaltyPercent`
-        uint256 deposit0PricedInToken1 = deposit0.mul(price).div(1e18);
-        uint256 pool0PricedInToken1 = pool0.mul(price).div(1e18);
-        if (pool0PricedInToken1.add(deposit0PricedInToken1) >= pool1 && deposit0PricedInToken1 > deposit1) {
-            shares = reduceByPercent(deposit0PricedInToken1.sub(deposit1), penaltyPercent);
-            shares = shares.add(deposit1.mul(2));
-        } else if (pool0PricedInToken1 <= pool1 && deposit0PricedInToken1 < deposit1) {
-            shares = reduceByPercent(deposit1.sub(deposit0PricedInToken1), penaltyPercent);
-            shares = shares.add(deposit0PricedInToken1.mul(2));
-        } else if (pool0PricedInToken1.add(deposit0PricedInToken1) < pool1.add(deposit1) && deposit0PricedInToken1 < deposit1) {
-            uint256 docked1 = pool1.add(deposit1).sub(pool0PricedInToken1.add(deposit0PricedInToken1));
-            shares = reduceByPercent(docked1, penaltyPercent);
-            shares = deposit1.sub(docked1).add(deposit0PricedInToken1);
-        } else if (pool0PricedInToken1.add(deposit0PricedInToken1) > pool1.add(deposit1) && deposit0PricedInToken1 > deposit1) {
-            uint256 docked0 = pool0PricedInToken1.add(deposit0PricedInToken1).sub(pool1.add(deposit1));
-            shares = reduceByPercent(docked0, penaltyPercent);
-            shares = deposit0PricedInToken1.sub(docked0).add(deposit1);
-        } else {
-            shares = deposit1.add(deposit0PricedInToken1);
-        }
-
-        return (shares, deposit0PricedInToken1.add(deposit1));
     }
 
     function withdraw(
@@ -436,14 +400,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
     function setDepositMax(uint256 _deposit0Max, uint256 _deposit1Max) external onlyOwner {
         deposit0Max = _deposit0Max;
         deposit1Max = _deposit1Max;
-    }
-
-    function setPenaltyPercent(uint256 _penaltyPercent) external onlyOwner {
-        penaltyPercent = _penaltyPercent;
-    }
-
-    function reduceByPercent(uint256 quantity, uint256 percent) internal view returns (uint256) {
-          return quantity.mul(MILLIBASIS.mul(100 - percent)).div(MILLIBASIS.mul(100));
     }
 
     function emergencyWithdraw(IERC20 token, uint256 amount) external onlyOwner {

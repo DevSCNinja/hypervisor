@@ -3,9 +3,9 @@ import { BigNumber, BigNumberish, constants } from 'ethers'
 import chai from 'chai'
 import { expect } from 'chai'
 import { fixture, hypervisorTestFixture } from "./shared/fixtures"
-import { solidity } from "ethereum-waffle";
+import { solidity } from "ethereum-waffle"
 
-chai.use(solidity);
+chai.use(solidity)
 
 import {
     FeeAmount,
@@ -24,7 +24,7 @@ import {
     Hypervisor,
     NonfungiblePositionManager,
     TestERC20
-} from "../typechain";
+} from "../typechain"
 
 const createFixtureLoader = waffle.createFixtureLoader
 
@@ -56,9 +56,9 @@ describe('Hypervisor', () => {
         const poolAddress = await factory.getPool(token0.address, token1.address, FeeAmount.MEDIUM)
         uniswapPool = (await ethers.getContractAt('IUniswapV3Pool', poolAddress)) as IUniswapV3Pool
         await uniswapPool.initialize(encodePriceSqrt('1', '1'))
-        await hypervisor.setDepositMax(ethers.utils.parseEther('100000'), ethers.utils.parseEther('100000'));
+        await hypervisor.setDepositMax(ethers.utils.parseEther('100000'), ethers.utils.parseEther('100000'))
 
-        // adding extraliquidity into pool to make sure there's always
+        // adding extra liquidity into pool to make sure there's always
         // someone to swap with
         await token0.mint(carol.address, ethers.utils.parseEther('1000000000000'))
         await token1.mint(carol.address, ethers.utils.parseEther('1000000000000'))
@@ -116,8 +116,8 @@ describe('Hypervisor', () => {
 
         let basePosition = await hypervisor.getBasePosition()
         let limitPosition = await hypervisor.getLimitPosition()
-        expect(basePosition[0]).to.be.gt(0);
-        expect(limitPosition[0]).to.be.equal(0);
+        expect(basePosition[0]).to.be.gt(0)
+        expect(limitPosition[0]).to.be.equal(0)
 
         await hypervisor.connect(alice).deposit(ethers.utils.parseEther('1000'), ethers.utils.parseEther('4000'), alice.address)
         token0hypervisor = await token0.balanceOf(hypervisor.address)
@@ -126,8 +126,8 @@ describe('Hypervisor', () => {
         expect(token1hypervisor).to.equal(ethers.utils.parseEther('4000'))
         alice_liq_balance = await hypervisor.balanceOf(alice.address)
         console.log("alice liq balance: " + alice_liq_balance)
-        expect(alice_liq_balance).to.gt(ethers.utils.parseEther('6940'))
-        expect(alice_liq_balance).to.lt(ethers.utils.parseEther('6941'))
+        expect(alice_liq_balance).to.lt(ethers.utils.parseEther('7001'))
+        expect(alice_liq_balance).to.gt(ethers.utils.parseEther('6999'))
         let tokenAmounts = await hypervisor.getTotalAmounts()
         console.log("totalAmounts: " + tokenAmounts)
 
@@ -150,17 +150,17 @@ describe('Hypervisor', () => {
         let limitUpper = -60
         let limitLower = -540
         tokenAmounts = await hypervisor.getTotalAmounts()
-        let token0BeforeRebalanceSwap = tokenAmounts[0];
-        let token1BeforeRebalanceSwap = tokenAmounts[1];
+        let token0BeforeRebalanceSwap = tokenAmounts[0]
+        let token1BeforeRebalanceSwap = tokenAmounts[1]
         let fees0 = await token0.balanceOf(bob.address)
         let fees1 = await token1.balanceOf(bob.address)
         expect(fees0).to.equal(0)
         expect(fees1).to.equal(0)
-        let rebalanceSwapAmount = ethers.utils.parseEther('4000');
-        await hypervisor.rebalance(-1800, 1920, limitLower, limitUpper, bob.address, rebalanceSwapAmount);
+        let rebalanceSwapAmount = ethers.utils.parseEther('4000')
+        await hypervisor.rebalance(-1800, 1920, limitLower, limitUpper, bob.address, rebalanceSwapAmount)
         tokenAmounts = await hypervisor.getTotalAmounts()
-        let token0AfterRebalanceSwap = tokenAmounts[0];
-        expect(token0BeforeRebalanceSwap.sub(token0AfterRebalanceSwap).sub(rebalanceSwapAmount).abs()).to.be.lt(ethers.utils.parseEther('1'));
+        let token0AfterRebalanceSwap = tokenAmounts[0]
+        expect(token0BeforeRebalanceSwap.sub(token0AfterRebalanceSwap).sub(rebalanceSwapAmount).abs()).to.be.lt(ethers.utils.parseEther('1'))
         token0hypervisor = await token0.balanceOf(hypervisor.address)
         token1hypervisor = await token1.balanceOf(hypervisor.address)
         expect(token0hypervisor).to.equal(0)
@@ -178,12 +178,12 @@ describe('Hypervisor', () => {
         console.log("limit liq:" + limitPosition[0])
         console.log("base liq:" + basePosition[0])
 
-        await hypervisor.rebalance(-1800, 1920, limitLower, limitUpper, bob.address, rebalanceSwapAmount.mul(-1));
-        tokenAmounts = await hypervisor.getTotalAmounts();
-        let token0AfterSecondRebalance = tokenAmounts[0];
-        let token1AfterSecondRebalance = tokenAmounts[1];
-        expect(token0AfterSecondRebalance.sub(token0BeforeRebalanceSwap).abs()).to.be.lt(ethers.utils.parseEther('15'));
-        expect(token1AfterSecondRebalance.sub(token1BeforeRebalanceSwap).abs()).to.be.lt(ethers.utils.parseEther('15'));
+        await hypervisor.rebalance(-1800, 1920, limitLower, limitUpper, bob.address, rebalanceSwapAmount.mul(-1))
+        tokenAmounts = await hypervisor.getTotalAmounts()
+        let token0AfterSecondRebalance = tokenAmounts[0]
+        let token1AfterSecondRebalance = tokenAmounts[1]
+        expect(token0AfterSecondRebalance.sub(token0BeforeRebalanceSwap).abs()).to.be.lt(ethers.utils.parseEther('15'))
+        expect(token1AfterSecondRebalance.sub(token1BeforeRebalanceSwap).abs()).to.be.lt(ethers.utils.parseEther('15'))
 
         // test withdrawal of liquidity
         alice_liq_balance = await hypervisor.balanceOf(alice.address)
@@ -227,8 +227,8 @@ describe('Hypervisor', () => {
 
         let basePosition = await hypervisor.getBasePosition()
         let limitPosition = await hypervisor.getLimitPosition()
-        expect(basePosition[0]).to.be.gt(0);
-        expect(limitPosition[0]).to.be.equal(0);
+        expect(basePosition[0]).to.be.gt(0)
+        expect(limitPosition[0]).to.be.equal(0)
 
         let tokenAmounts = await hypervisor.getTotalAmounts()
         expect(tokenAmounts[0] === tokenAmounts[1])
@@ -252,15 +252,15 @@ describe('Hypervisor', () => {
         let limitLower = -180
         tokenAmounts = await hypervisor.getTotalAmounts()
         expect(tokenAmounts[0] > tokenAmounts[1])
-        let currentTick = await hypervisor.currentTick();
+        let currentTick = await hypervisor.currentTick()
         // this is beyond the bounds of the original base position
-        expect(currentTick).to.equal(-199);
+        expect(currentTick).to.equal(-199)
 
         let fees0 = await token0.balanceOf(bob.address)
         let fees1 = await token1.balanceOf(bob.address)
         expect(fees0).to.equal(0)
         expect(fees1).to.equal(0)
-        await hypervisor.rebalance(-1800, 1800, limitLower, limitUpper, bob.address, 0);
+        await hypervisor.rebalance(-1800, 1800, limitLower, limitUpper, bob.address, 0)
         token0hypervisor = await token0.balanceOf(hypervisor.address)
         token1hypervisor = await token1.balanceOf(hypervisor.address)
         expect(token0hypervisor).to.equal(0)
@@ -294,12 +294,12 @@ describe('Hypervisor', () => {
             amountOutMinimum: ethers.utils.parseEther('0'),
             sqrtPriceLimitX96: 0,
         })
-        currentTick = await hypervisor.currentTick();
+        currentTick = await hypervisor.currentTick()
         // this is beyond the bounds of the original base position
-        expect(currentTick).to.equal(200);
-        limitUpper = 180;
-        limitLower = 0;
-        await hypervisor.rebalance(-1800, 1800, limitLower, limitUpper, bob.address, 0);
+        expect(currentTick).to.equal(200)
+        limitUpper = 180
+        limitLower = 0
+        await hypervisor.rebalance(-1800, 1800, limitLower, limitUpper, bob.address, 0)
         token0hypervisor = await token0.balanceOf(hypervisor.address)
         token1hypervisor = await token1.balanceOf(hypervisor.address)
         expect(token0hypervisor).to.equal(0)
@@ -321,115 +321,115 @@ describe('Hypervisor', () => {
     })
 
     it('deposit/withdrawal with many users', async () => {
-        let tokenAmount = ethers.utils.parseEther('10000');
+        let tokenAmount = ethers.utils.parseEther('10000')
 
         // token mint for liquidity add
-        await token0.mint(user0.address, tokenAmount);
-        await token1.mint(user0.address, tokenAmount);
+        await token0.mint(user0.address, tokenAmount)
+        await token1.mint(user0.address, tokenAmount)
 
-        await token0.mint(user1.address, tokenAmount);
-        await token1.mint(user1.address, tokenAmount);
+        await token0.mint(user1.address, tokenAmount)
+        await token1.mint(user1.address, tokenAmount)
 
-        await token0.mint(user2.address, tokenAmount);
-        await token1.mint(user2.address, tokenAmount);
+        await token0.mint(user2.address, tokenAmount)
+        await token1.mint(user2.address, tokenAmount)
 
-        await token0.mint(user3.address, tokenAmount);
-        await token1.mint(user3.address, tokenAmount);
+        await token0.mint(user3.address, tokenAmount)
+        await token1.mint(user3.address, tokenAmount)
 
-        await token0.mint(user4.address, tokenAmount);
-        await token1.mint(user4.address, tokenAmount);
+        await token0.mint(user4.address, tokenAmount)
+        await token1.mint(user4.address, tokenAmount)
 
-        await token0.mint(other.address, ethers.utils.parseEther('100000'));
-        await token1.mint(other.address, ethers.utils.parseEther('100000'));
+        await token0.mint(other.address, ethers.utils.parseEther('100000'))
+        await token1.mint(other.address, ethers.utils.parseEther('100000'))
 
         // deposit to hypervisor contract
 
-        await token0.connect(user0).approve(hypervisor.address, tokenAmount);
-        await token1.connect(user0).approve(hypervisor.address, tokenAmount);
+        await token0.connect(user0).approve(hypervisor.address, tokenAmount)
+        await token1.connect(user0).approve(hypervisor.address, tokenAmount)
 
-        await token0.connect(user1).approve(hypervisor.address, tokenAmount);
-        await token1.connect(user1).approve(hypervisor.address, tokenAmount);
+        await token0.connect(user1).approve(hypervisor.address, tokenAmount)
+        await token1.connect(user1).approve(hypervisor.address, tokenAmount)
 
-        await token0.connect(user2).approve(hypervisor.address, tokenAmount);
-        await token1.connect(user2).approve(hypervisor.address, tokenAmount);
+        await token0.connect(user2).approve(hypervisor.address, tokenAmount)
+        await token1.connect(user2).approve(hypervisor.address, tokenAmount)
 
-        await token0.connect(user3).approve(hypervisor.address, tokenAmount);
-        await token1.connect(user3).approve(hypervisor.address, tokenAmount);
+        await token0.connect(user3).approve(hypervisor.address, tokenAmount)
+        await token1.connect(user3).approve(hypervisor.address, tokenAmount)
 
-        await token0.connect(user4).approve(hypervisor.address, tokenAmount);
-        await token1.connect(user4).approve(hypervisor.address, tokenAmount);
+        await token0.connect(user4).approve(hypervisor.address, tokenAmount)
+        await token1.connect(user4).approve(hypervisor.address, tokenAmount)
 
-        await hypervisor.connect(user0).deposit(tokenAmount, tokenAmount, user0.address);
-        await hypervisor.connect(user1).deposit(tokenAmount, tokenAmount, user1.address);
-        await hypervisor.connect(user2).deposit(tokenAmount, tokenAmount, user2.address);
-        await hypervisor.connect(user3).deposit(tokenAmount, tokenAmount, user3.address);
-        await hypervisor.connect(user4).deposit(tokenAmount, tokenAmount, user4.address);
+        await hypervisor.connect(user0).deposit(tokenAmount, tokenAmount, user0.address)
+        await hypervisor.connect(user1).deposit(tokenAmount, tokenAmount, user1.address)
+        await hypervisor.connect(user2).deposit(tokenAmount, tokenAmount, user2.address)
+        await hypervisor.connect(user3).deposit(tokenAmount, tokenAmount, user3.address)
+        await hypervisor.connect(user4).deposit(tokenAmount, tokenAmount, user4.address)
 
-        let user0token0Amount = await token0.balanceOf(user0.address);
-        let user0token1Amount = await token1.balanceOf(user0.address);
+        let user0token0Amount = await token0.balanceOf(user0.address)
+        let user0token1Amount = await token1.balanceOf(user0.address)
 
-        let user1token0Amount = await token0.balanceOf(user1.address);
-        let user1token1Amount = await token1.balanceOf(user1.address);
+        let user1token0Amount = await token0.balanceOf(user1.address)
+        let user1token1Amount = await token1.balanceOf(user1.address)
 
-        let user2token0Amount = await token0.balanceOf(user2.address);
-        let user2token1Amount = await token1.balanceOf(user2.address);
+        let user2token0Amount = await token0.balanceOf(user2.address)
+        let user2token1Amount = await token1.balanceOf(user2.address)
 
-        let user3token0Amount = await token0.balanceOf(user3.address);
-        let user3token1Amount = await token1.balanceOf(user3.address);
+        let user3token0Amount = await token0.balanceOf(user3.address)
+        let user3token1Amount = await token1.balanceOf(user3.address)
 
-        let user4token0Amount = await token0.balanceOf(user4.address);
-        let user4token1Amount = await token1.balanceOf(user4.address);
+        let user4token0Amount = await token0.balanceOf(user4.address)
+        let user4token1Amount = await token1.balanceOf(user4.address)
 
-        expect(user0token0Amount.toString()).to.be.equal("0");
-        expect(user1token0Amount.toString()).to.be.equal("0");
-        expect(user2token0Amount.toString()).to.be.equal("0");
-        expect(user3token0Amount.toString()).to.be.equal("0");
-        expect(user4token0Amount.toString()).to.be.equal("0");
-        expect(user0token1Amount.toString()).to.be.equal("0");
-        expect(user1token1Amount.toString()).to.be.equal("0");
-        expect(user2token1Amount.toString()).to.be.equal("0");
-        expect(user3token1Amount.toString()).to.be.equal("0");
-        expect(user4token1Amount.toString()).to.be.equal("0");
+        expect(user0token0Amount.toString()).to.be.equal("0")
+        expect(user1token0Amount.toString()).to.be.equal("0")
+        expect(user2token0Amount.toString()).to.be.equal("0")
+        expect(user3token0Amount.toString()).to.be.equal("0")
+        expect(user4token0Amount.toString()).to.be.equal("0")
+        expect(user0token1Amount.toString()).to.be.equal("0")
+        expect(user1token1Amount.toString()).to.be.equal("0")
+        expect(user2token1Amount.toString()).to.be.equal("0")
+        expect(user3token1Amount.toString()).to.be.equal("0")
+        expect(user4token1Amount.toString()).to.be.equal("0")
 
         // rebalance
-        await hypervisor.rebalance(-120, 120, 0, 60, bob.address, 0);
+        await hypervisor.rebalance(-120, 120, 0, 60, bob.address, 0)
 
         // withdraw
-        const user0_liq_balance = await hypervisor.balanceOf(user0.address);
-        const user1_liq_balance = await hypervisor.balanceOf(user1.address);
-        const user2_liq_balance = await hypervisor.balanceOf(user2.address);
-        const user3_liq_balance = await hypervisor.balanceOf(user3.address);
-        const user4_liq_balance = await hypervisor.balanceOf(user4.address);
+        const user0_liq_balance = await hypervisor.balanceOf(user0.address)
+        const user1_liq_balance = await hypervisor.balanceOf(user1.address)
+        const user2_liq_balance = await hypervisor.balanceOf(user2.address)
+        const user3_liq_balance = await hypervisor.balanceOf(user3.address)
+        const user4_liq_balance = await hypervisor.balanceOf(user4.address)
 
-        await hypervisor.connect(user0).withdraw(user0_liq_balance, user0.address, user0.address);
-        await hypervisor.connect(user1).withdraw(user1_liq_balance, user1.address, user1.address);
-        await hypervisor.connect(user2).withdraw(user2_liq_balance, user2.address, user2.address);
-        await hypervisor.connect(user3).withdraw(user3_liq_balance, user3.address, user3.address);
-        await hypervisor.connect(user4).withdraw(user4_liq_balance, user4.address, user4.address);
+        await hypervisor.connect(user0).withdraw(user0_liq_balance, user0.address, user0.address)
+        await hypervisor.connect(user1).withdraw(user1_liq_balance, user1.address, user1.address)
+        await hypervisor.connect(user2).withdraw(user2_liq_balance, user2.address, user2.address)
+        await hypervisor.connect(user3).withdraw(user3_liq_balance, user3.address, user3.address)
+        await hypervisor.connect(user4).withdraw(user4_liq_balance, user4.address, user4.address)
 
-        user0token0Amount = await token0.balanceOf(user0.address);
-        user0token1Amount = await token1.balanceOf(user0.address);
+        user0token0Amount = await token0.balanceOf(user0.address)
+        user0token1Amount = await token1.balanceOf(user0.address)
 
-        user1token0Amount = await token0.balanceOf(user1.address);
-        user1token1Amount = await token1.balanceOf(user1.address);
+        user1token0Amount = await token0.balanceOf(user1.address)
+        user1token1Amount = await token1.balanceOf(user1.address)
 
-        user2token0Amount = await token0.balanceOf(user2.address);
-        user2token1Amount = await token1.balanceOf(user2.address);
+        user2token0Amount = await token0.balanceOf(user2.address)
+        user2token1Amount = await token1.balanceOf(user2.address)
 
-        user3token0Amount = await token0.balanceOf(user3.address);
-        user3token1Amount = await token1.balanceOf(user3.address);
+        user3token0Amount = await token0.balanceOf(user3.address)
+        user3token1Amount = await token1.balanceOf(user3.address)
 
-        user4token0Amount = await token0.balanceOf(user4.address);
-        user4token1Amount = await token1.balanceOf(user4.address);
+        user4token0Amount = await token0.balanceOf(user4.address)
+        user4token1Amount = await token1.balanceOf(user4.address)
 
-        expect(user0token0Amount.sub(tokenAmount).abs().toNumber()).to.be.lte(1);
-        expect(user1token0Amount.sub(tokenAmount).abs().toNumber()).to.be.lte(1);
-        expect(user2token0Amount.sub(tokenAmount).abs().toNumber()).to.be.lte(1);
-        expect(user3token0Amount.sub(tokenAmount).abs().toNumber()).to.be.lte(1);
-        expect(user0token1Amount.sub(tokenAmount).abs().toNumber()).to.be.lte(1);
-        expect(user1token1Amount.sub(tokenAmount).abs().toNumber()).to.be.lte(1);
-        expect(user2token1Amount.sub(tokenAmount).abs().toNumber()).to.be.lte(1);
-        expect(user3token1Amount.sub(tokenAmount).abs().toNumber()).to.be.lte(1);
+        expect(user0token0Amount.sub(tokenAmount).abs().toNumber()).to.be.lte(1)
+        expect(user1token0Amount.sub(tokenAmount).abs().toNumber()).to.be.lte(1)
+        expect(user2token0Amount.sub(tokenAmount).abs().toNumber()).to.be.lte(1)
+        expect(user3token0Amount.sub(tokenAmount).abs().toNumber()).to.be.lte(1)
+        expect(user0token1Amount.sub(tokenAmount).abs().toNumber()).to.be.lte(1)
+        expect(user1token1Amount.sub(tokenAmount).abs().toNumber()).to.be.lte(1)
+        expect(user2token1Amount.sub(tokenAmount).abs().toNumber()).to.be.lte(1)
+        expect(user3token1Amount.sub(tokenAmount).abs().toNumber()).to.be.lte(1)
     })
 
     it('can withdraw deposited funds without rebalance', async () => {
@@ -454,21 +454,21 @@ describe('Hypervisor', () => {
 
         await hypervisor.connect(alice).deposit(ethers.utils.parseEther('1000'), ethers.utils.parseEther('1000'), alice.address)
 
-        await hypervisor.rebalance(-120, 120, 0, 60, bob.address, 0);
+        await hypervisor.rebalance(-120, 120, 0, 60, bob.address, 0)
 
-        let tokenAmount = ethers.utils.parseEther('1000');
+        let tokenAmount = ethers.utils.parseEther('1000')
 
-        await token0.mint(user0.address, tokenAmount);
-        await token1.mint(user0.address, tokenAmount);
-        await token0.connect(user0).approve(hypervisor.address, tokenAmount);
-        await token1.connect(user0).approve(hypervisor.address, tokenAmount);
-        await hypervisor.connect(user0).deposit(tokenAmount, tokenAmount, user0.address);
-        let token0Balance = await token0.balanceOf(user0.address);
-        let token1Balance = await token1.balanceOf(user0.address);
+        await token0.mint(user0.address, tokenAmount)
+        await token1.mint(user0.address, tokenAmount)
+        await token0.connect(user0).approve(hypervisor.address, tokenAmount)
+        await token1.connect(user0).approve(hypervisor.address, tokenAmount)
+        await hypervisor.connect(user0).deposit(tokenAmount, tokenAmount, user0.address)
+        let token0Balance = await token0.balanceOf(user0.address)
+        let token1Balance = await token1.balanceOf(user0.address)
         expect(token0Balance).to.equal(0)
         expect(token1Balance).to.equal(0)
 
-        const user0_liq_balance = await hypervisor.balanceOf(user0.address);
+        const user0_liq_balance = await hypervisor.balanceOf(user0.address)
         tokenAmounts = await hypervisor.getTotalAmounts()
         // verify that all liquidity has been removed from the pool
         expect(tokenAmounts[0]).to.be.gte(ethers.utils.parseEther('1999'))
@@ -476,10 +476,169 @@ describe('Hypervisor', () => {
         expect(tokenAmounts[0]).to.be.lt(ethers.utils.parseEther('2001'))
         expect(tokenAmounts[1]).to.be.lt(ethers.utils.parseEther('2001'))
 
-        await hypervisor.connect(user0).withdraw(user0_liq_balance, user0.address, user0.address);
-        token0Balance = await token0.balanceOf(user0.address);
-        token1Balance = await token1.balanceOf(user0.address);
+        await hypervisor.connect(user0).withdraw(user0_liq_balance, user0.address, user0.address)
+        token0Balance = await token0.balanceOf(user0.address)
+        token1Balance = await token1.balanceOf(user0.address)
         expect(token0Balance).to.equal(ethers.utils.parseEther('1000'))
         expect(token1Balance).to.equal(ethers.utils.parseEther('1000'))
+    })
+
+})
+
+describe('ETHUSDT Hypervisor', () => {
+    const [wallet, other, user0, user1, user2, user3, user4, user5] = waffle.provider.getWallets()
+
+    let factory: UniswapV3Factory
+    let router: SwapRouter
+    let nft: NonfungiblePositionManager
+    let token0: TestERC20
+    let token1: TestERC20
+    let token2: TestERC20
+    let uniswapPool: IUniswapV3Pool
+    let hypervisorFactory: HypervisorFactory
+    let hypervisor: Hypervisor
+
+    let loadFixture: ReturnType<typeof createFixtureLoader>
+    before('create fixture loader', async () => {
+        loadFixture = createFixtureLoader([wallet, other])
+    })
+
+    beforeEach('deploy contracts', async () => {
+        ({ token0, token1, token2, factory, router, nft, hypervisorFactory } = await loadFixture(hypervisorTestFixture))
+        await hypervisorFactory.createHypervisor(token0.address, token1.address, FeeAmount.MEDIUM,-1800, 1800, -600, 0)
+        const hypervisorAddress = await hypervisorFactory.getHypervisor(token0.address, token1.address, FeeAmount.MEDIUM)
+        hypervisor = (await ethers.getContractAt('Hypervisor', hypervisorAddress)) as Hypervisor
+
+        const poolAddress = await factory.getPool(token0.address, token1.address, FeeAmount.MEDIUM)
+        uniswapPool = (await ethers.getContractAt('IUniswapV3Pool', poolAddress)) as IUniswapV3Pool
+        // initializing the pool to mimick the tick that an ETH (18 decimals)
+        // - USDT (6 decimals) pool would have if ETH were priced at $2500
+        await uniswapPool.initialize(encodePriceSqrt(2500000000, ethers.utils.parseEther('1')))
+        await hypervisor.setDepositMax(ethers.utils.parseEther('100000'), ethers.utils.parseEther('100000'))
+
+        // adding extra liquidity into pool to make sure there's always
+        // someone to swap with
+        await token0.mint(user0.address, ethers.utils.parseEther('1000000000000'))
+        await token1.mint(user0.address, ethers.utils.parseEther('1000000000000'))
+
+        await token0.connect(user0).approve(nft.address, ethers.utils.parseEther('10000000000'))
+        await token1.connect(user0).approve(nft.address, ethers.utils.parseEther('10000000000'))
+
+        await nft.connect(user0).mint({
+            token0: token0.address,
+            token1: token1.address,
+            tickLower: getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+            tickUpper: getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+            fee: FeeAmount.MEDIUM,
+            recipient: user0.address,
+            amount0Desired: ethers.utils.parseEther('10000000000'),
+            amount1Desired: ethers.utils.parseEther('10000000000'),
+            amount0Min: 0,
+            amount1Min: 0,
+            deadline: 2000000000,
+        })
+    })
+
+    it('handles deposit / withdrawal from pools of different balances', async () => {
+        let slot0 = await uniswapPool.slot0()
+        expect(slot0.tick).to.equal(-198080)
+
+        // create a balanced base deposit
+        await token0.mint(user1.address, ethers.utils.parseEther('1000000'))
+        await token1.mint(user1.address, ethers.utils.parseEther('1000000'))
+
+        await token0.connect(user1).approve(hypervisor.address, ethers.utils.parseEther('1000000'))
+        await token1.connect(user1).approve(hypervisor.address, ethers.utils.parseEther('1000000'))
+
+        await hypervisor.connect(user1).deposit(ethers.utils.parseEther('1'), 2500000000, user1.address)
+
+        let user1LiquidityBalance = await hypervisor.balanceOf(user1.address)
+        let expectedValue = 5000010000
+        expect(user1LiquidityBalance).to.be.gt(Math.round(expectedValue*0.999))
+        expect(user1LiquidityBalance).to.be.lt(Math.round(expectedValue*1.001))
+
+        // deposit & withdraw liquidity with ETH & USDT balanced
+        await token0.mint(user2.address, ethers.utils.parseEther('0.5'))
+        await token1.mint(user2.address, 1250000000)
+        await token0.connect(user2).approve(hypervisor.address, ethers.utils.parseEther('0.5'))
+        await token1.connect(user2).approve(hypervisor.address, 1250000000)
+
+        await hypervisor.connect(user2).deposit(ethers.utils.parseEther('0.5'), 1250000000, user2.address)
+        let user2LiquidityBalance = await hypervisor.balanceOf(user2.address)
+        expectedValue = 2500000000
+        expect(user2LiquidityBalance).to.be.gt(Math.round(expectedValue*0.999))
+        expect(user2LiquidityBalance).to.be.lt(Math.round(expectedValue*1.001))
+
+        await hypervisor.connect(user2).withdraw(user2LiquidityBalance, user2.address, user2.address)
+
+        let user2ethBalance = await token0.balanceOf(user2.address)
+        let user2usdtBalance = await token1.balanceOf(user2.address)
+        expect(user2ethBalance).to.be.lt(ethers.utils.parseEther('0.501'))
+        expect(user2ethBalance).to.be.gt(ethers.utils.parseEther('0.499'))
+        expect(user2usdtBalance).to.be.lt(1250100000)
+        expect(user2usdtBalance).to.be.gt(1249900000)
+
+        // deposit & withdraw liquidity with ETH only
+        await token0.mint(user3.address, ethers.utils.parseEther('0.5'))
+        await token0.connect(user3).approve(hypervisor.address, ethers.utils.parseEther('0.5'))
+
+        await hypervisor.connect(user3).deposit(ethers.utils.parseEther('0.5'), 0, user3.address)
+        let user3LiquidityBalance = await hypervisor.balanceOf(user3.address)
+        expect(user3LiquidityBalance).to.be.gt(1249500000)
+        expect(user3LiquidityBalance).to.be.lt(1250010000)
+
+        await hypervisor.connect(user3).withdraw(user3LiquidityBalance, user3.address, user3.address)
+
+        let user3ethBalance = await token0.balanceOf(user3.address)
+        let user3usdtBalance = await token1.balanceOf(user3.address)
+        expect(user3ethBalance).to.be.lt(ethers.utils.parseEther('0.301'))
+        expect(user3ethBalance).to.be.gt(ethers.utils.parseEther('0.299'))
+        expect(user3usdtBalance).to.be.lt(500100000)
+        expect(user3usdtBalance).to.be.gt(499900000)
+
+        // deposit & withdraw liquidity with USDT overweight
+        let singleSidedUSDTAmount = 1000000000
+        await token1.mint(user4.address, singleSidedUSDTAmount)
+        await token1.connect(user4).approve(hypervisor.address, singleSidedUSDTAmount)
+
+        await hypervisor.connect(user4).deposit(0, singleSidedUSDTAmount, user4.address)
+        let user4LiquidityBalance = await hypervisor.balanceOf(user4.address)
+        expect(user4LiquidityBalance).to.be.gt(Math.round(singleSidedUSDTAmount*0.999))
+        expect(user4LiquidityBalance).to.be.lt(Math.round(singleSidedUSDTAmount*1.001))
+
+        await hypervisor.connect(user4).withdraw(user4LiquidityBalance, user4.address, user4.address)
+
+        let user4ethBalance = await token0.balanceOf(user4.address)
+        let user4usdtBalance = await token1.balanceOf(user4.address)
+        expect(user4ethBalance).to.be.lt(ethers.utils.parseEther('0.201'))
+        expect(user4ethBalance).to.be.gt(ethers.utils.parseEther('0.199'))
+        expect(user4usdtBalance).to.be.lt(500100000)
+        expect(user4usdtBalance).to.be.gt(499900000)
+
+        // add a deposit of just ETH
+        await hypervisor.connect(user1).deposit(ethers.utils.parseEther('1'), 0, user1.address)
+
+        user1LiquidityBalance = await hypervisor.balanceOf(user1.address)
+        expect(user1LiquidityBalance).to.be.gt(7499500000)
+        expect(user1LiquidityBalance).to.be.lt(7500100000)
+
+        // deposit & withdraw liquidity with ETH & USDT balanced
+        // deposit & withdraw liquidity with ETH overweight
+        // deposit & withdraw liquidity with USDT overweight
+
+        // add a deposit of just USDT, flipping the balance of the pool to be
+        // overweight USDT
+        await hypervisor.connect(user1).deposit(0, 6500000000, user1.address)
+
+        user1LiquidityBalance = await hypervisor.balanceOf(user1.address)
+        expect(user1LiquidityBalance).to.be.gt(13999500000)
+        expect(user1LiquidityBalance).to.be.lt(14000010000)
+
+        // deposit & withdraw liquidity with ETH & USDT balanced
+        // deposit & withdraw liquidity with ETH overweight
+        // deposit & withdraw liquidity with USDT overweight
+    })
+
+    it('handles deposit / withdrawal from pools of different balances with swapping', async () => {
     })
 })
