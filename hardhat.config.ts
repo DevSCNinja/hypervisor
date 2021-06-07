@@ -35,8 +35,9 @@ export default {
           },
           // gasPrice: parseUnits('130', 'gwei').toNumber(),
         },
-
-    
+        forking: {
+          url: "https://eth-mainnet.alchemyapi.io/v2/SXoZ8LShLeHhtE_yyvwL4WZ4dXGwOjeO"
+        }
     },
     watcher: {
         compilation: {

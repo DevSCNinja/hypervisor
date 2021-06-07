@@ -17,11 +17,11 @@ const DAY = 60 * 60 * 24
 
 task('deploy-hypervisor-factory', 'Deploy Hypervisor contract')
   .setAction(async (cliArgs, { ethers, run, network }) => {
-    
+
     //TODO cli args
     // goerli
     const args = {
-      uniswapFactory: "0x1f98431c8ad98523631ae4a59f267346ea31f984",  
+      uniswapFactory: "0x1f98431c8ad98523631ae4a59f267346ea31f984",
     };
 
     console.log('Network')
