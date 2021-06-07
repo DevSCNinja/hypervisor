@@ -26,7 +26,7 @@ import {
     TestERC20
 } from "../typechain"
 
-describe('ETHUSDT Hypervisor', () => {
+describe('Hypervisors on Mainnet Fork', () => {
     let factory: UniswapV3Factory
     let uniswapPool: IUniswapV3Pool
     // token0 = WETH9
