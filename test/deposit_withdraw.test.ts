@@ -553,7 +553,7 @@ describe('ETHUSDT Hypervisor', () => {
         await hypervisor.connect(user1).deposit(ethers.utils.parseEther('1'), 2500000000, user1.address)
 
         let user1LiquidityBalance = await hypervisor.balanceOf(user1.address)
-        let expectedValue = 5000010000
+        let expectedValue = 5000000000
         expect(user1LiquidityBalance).to.be.gt(Math.round(expectedValue*0.999))
         expect(user1LiquidityBalance).to.be.lt(Math.round(expectedValue*1.001))
 
