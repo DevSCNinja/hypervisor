@@ -40,6 +40,8 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
     uint256 public deposit1Max;
     uint256 public maxTotalSupply;
 
+    uint256 constant public PRECISION = 1e36;
+
     constructor(
         address _pool,
         address _owner,
@@ -85,11 +87,11 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
         }
 
         uint160 sqrtPrice = TickMath.getSqrtRatioAtTick(currentTick());
-        uint256 price = FullMath.mulDiv(uint256(sqrtPrice).mul(uint256(sqrtPrice)), 1e18, 2**(96 * 2));
+        uint256 price = FullMath.mulDiv(uint256(sqrtPrice).mul(uint256(sqrtPrice)), PRECISION, 2**(96 * 2));
 
         (uint256 pool0, uint256 pool1) = getTotalAmounts();
 
-        uint256 deposit0PricedInToken1 = deposit0.mul(price).div(1e18);
+        uint256 deposit0PricedInToken1 = deposit0.mul(price).div(PRECISION);
         shares = deposit1.add(deposit0PricedInToken1);
 
         if (deposit0 > 0) {
@@ -100,7 +102,7 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
         }
 
         if (totalSupply() != 0) {
-          uint256 pool0PricedInToken1 = pool0.mul(price).div(1e18);
+          uint256 pool0PricedInToken1 = pool0.mul(price).div(PRECISION);
           shares = shares.mul(totalSupply()).div(pool0PricedInToken1.add(pool1));
         }
         _mint(to, shares);
