@@ -592,6 +592,8 @@ describe('ETHUSDT Hypervisor', () => {
         let user3ethBalance = await token0.balanceOf(user3.address)
         let user3usdtBalance = await token1.balanceOf(user3.address)
         expect(user3ethBalance).to.be.lt(ethers.utils.parseEther('0.301'))
+
+
         expect(user3ethBalance).to.be.gt(ethers.utils.parseEther('0.299'))
         expect(user3usdtBalance).to.be.lt(500100000)
         expect(user3usdtBalance).to.be.gt(499900000)
