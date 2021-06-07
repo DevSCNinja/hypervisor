@@ -33,24 +33,31 @@ describe('ETHUSDT Hypervisor', () => {
     let token0Address = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'
     // token1 = USDT
     let token1Address = '0xdAC17F958D2ee523a2206206994597C13D831ec7'
+    let usdcAddress = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48'
     let uniswapV3Factory = '0x1F98431c8aD98523631AE4a59f267346ea31F984'
     let hypervisorFactory: HypervisorFactory
     let hypervisor: Hypervisor
+    let usdcEthHypervisor: Hypervisor
     let usdt: TestERC20
     let weth9: TestERC20
+    let usdc: TestERC20
 
     beforeEach('deploy contracts', async () => {
         let hypervisorFactoryFactory = await ethers.getContractFactory('HypervisorFactory')
         hypervisorFactory = (await hypervisorFactoryFactory.deploy(uniswapV3Factory)) as HypervisorFactory
-        await hypervisorFactory.createHypervisor(token0Address, token1Address, FeeAmount.MEDIUM,-1800, 1800, -600, 0)
+        await hypervisorFactory.createHypervisor(token0Address, token1Address, FeeAmount.MEDIUM, -1800, 1800, -600, 0)
+        await hypervisorFactory.createHypervisor(usdcAddress, token0Address, FeeAmount.MEDIUM, -1800, 1800, -600, 0)
         const hypervisorAddress = await hypervisorFactory.getHypervisor(token0Address, token1Address, FeeAmount.MEDIUM)
+        const usdcEthHypervisorAddress = await hypervisorFactory.getHypervisor(usdcAddress, token0Address, FeeAmount.MEDIUM)
         hypervisor = (await ethers.getContractAt('Hypervisor', hypervisorAddress)) as Hypervisor
+        usdcEthHypervisor = (await ethers.getContractAt('Hypervisor', usdcEthHypervisorAddress)) as Hypervisor
 
         factory = (await ethers.getContractAt('UniswapV3Factory', uniswapV3Factory)) as UniswapV3Factory
         const poolAddress = await factory.getPool(token0Address, token1Address, FeeAmount.MEDIUM)
         uniswapPool = (await ethers.getContractAt('IUniswapV3Pool', poolAddress)) as IUniswapV3Pool
         usdt = (await ethers.getContractAt('TestERC20', token1Address)) as TestERC20
         weth9 = (await ethers.getContractAt('TestERC20', token0Address)) as TestERC20
+        usdc = (await ethers.getContractAt('TestERC20', usdcAddress)) as TestERC20
     })
 
     it('allows for swaps on ethusdt pair', async () => {
@@ -64,9 +71,15 @@ describe('ETHUSDT Hypervisor', () => {
 
         let usdtBalance = await usdt.balanceOf(owner.address)
         let weth9Balance = await weth9.balanceOf(owner.address)
-        console.log("usdt: " + usdtBalance.toString() + " weth: " + weth9Balance.toString())
+        let usdcBalance = await usdc.balanceOf(owner.address)
+        console.log("usdt: " + usdtBalance.toString() + " weth: " + weth9Balance.toString() + " usdc: " + usdcBalance.toString())
 
         await hypervisor.deposit(100000000, 1000, owner.address)
         await hypervisor.rebalance(19140, 19740, 19440, 19500, owner.address, -500)
+
+        await usdc.approve(usdcEthHypervisor.address, ethers.utils.parseEther('1000000'))
+        await weth9.approve(usdcEthHypervisor.address, ethers.utils.parseEther('1000000'))
+
+        //await usdcEthHypervisor.deposit(10000, 0, owner.address)
     })
 })
