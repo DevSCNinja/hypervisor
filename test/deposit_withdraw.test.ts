@@ -126,8 +126,8 @@ describe('Hypervisor', () => {
         expect(token1hypervisor).to.equal(ethers.utils.parseEther('4000'))
         alice_liq_balance = await hypervisor.balanceOf(alice.address)
         console.log("alice liq balance: " + alice_liq_balance)
-        expect(alice_liq_balance).to.lt(ethers.utils.parseEther('7001'))
-        expect(alice_liq_balance).to.gt(ethers.utils.parseEther('6999'))
+        expect(alice_liq_balance).to.lt(ethers.utils.parseEther('7000').add(15))
+        expect(alice_liq_balance).to.gt(ethers.utils.parseEther('7000').sub(15))
         let tokenAmounts = await hypervisor.getTotalAmounts()
         console.log("totalAmounts: " + tokenAmounts)
 
@@ -471,10 +471,10 @@ describe('Hypervisor', () => {
         const user0_liq_balance = await hypervisor.balanceOf(user0.address)
         tokenAmounts = await hypervisor.getTotalAmounts()
         // verify that all liquidity has been removed from the pool
-        expect(tokenAmounts[0]).to.be.gte(ethers.utils.parseEther('1999'))
-        expect(tokenAmounts[1]).to.be.gte(ethers.utils.parseEther('1999'))
-        expect(tokenAmounts[0]).to.be.lt(ethers.utils.parseEther('2001'))
-        expect(tokenAmounts[1]).to.be.lt(ethers.utils.parseEther('2001'))
+        expect(tokenAmounts[0]).to.be.gte(ethers.utils.parseEther('2000').sub(15))
+        expect(tokenAmounts[1]).to.be.gte(ethers.utils.parseEther('2000').sub(15))
+        expect(tokenAmounts[0]).to.be.lt(ethers.utils.parseEther('2000').add(15))
+        expect(tokenAmounts[1]).to.be.lt(ethers.utils.parseEther('2000').add(15))
 
         await hypervisor.connect(user0).withdraw(user0_liq_balance, user0.address, user0.address)
         token0Balance = await token0.balanceOf(user0.address)
