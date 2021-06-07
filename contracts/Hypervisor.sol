@@ -85,8 +85,7 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
         }
 
         uint160 sqrtPrice = TickMath.getSqrtRatioAtTick(currentTick());
-        uint256 priceSquared = uint256(sqrtPrice).mul(uint256(sqrtPrice));
-        uint256 price = FullMath.mulDiv(priceSquared, 1e18, 2**(96 * 2));
+        uint256 price = FullMath.mulDiv(uint256(sqrtPrice).mul(uint256(sqrtPrice)), 1e18, 2**(96 * 2));
 
         (uint256 pool0, uint256 pool1) = getTotalAmounts();
 
