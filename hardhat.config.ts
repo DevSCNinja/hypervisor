@@ -13,6 +13,12 @@ export default {
     networks: {
         hardhat: {
             allowUnlimitedContractSize: false,
+            forking: {
+              url: "https://mainnet.infura.io/v3/73822299c87541b18a6218315ec5a8bb",
+              // url: "https://eth-mainnet.alchemyapi.io/v2/SXoZ8LShLeHhtE_yyvwL4WZ4dXGwOjeO",
+              accounts: ['2c58d47b6ccfb6869943d9b9b4ae94b1135877d6b8c8ea8daaba3214465b8c97'],
+              blockNumber: 12587891
+            }
         },
         goerli: {
           url: 'https://goerli.infura.io/v3/' + process.env.INFURA_ID,
@@ -33,10 +39,6 @@ export default {
           accounts: {
             mnemonic,
           },
-          // gasPrice: parseUnits('130', 'gwei').toNumber(),
-        },
-        forking: {
-          url: "https://eth-mainnet.alchemyapi.io/v2/SXoZ8LShLeHhtE_yyvwL4WZ4dXGwOjeO"
         }
     },
     watcher: {
@@ -62,4 +64,7 @@ export default {
   etherscan: {
     apiKey: process.env.ETHERSCAN_APIKEY,
   },
+  mocha: {
+    timeout: 2000000
+  }
 }

@@ -39,20 +39,19 @@ describe('ETHUSDT Hypervisor', () => {
 
     beforeEach('deploy contracts', async () => {
         let hypervisorFactoryFactory = await ethers.getContractFactory('HypervisorFactory')
-        console.log(hypervisorFactoryFactory)
         hypervisorFactory = (await hypervisorFactoryFactory.deploy(uniswapV3Factory)) as HypervisorFactory
+        await hypervisorFactory.createHypervisor(token0Address, token1Address, FeeAmount.MEDIUM,-1800, 1800, -600, 0)
+        const hypervisorAddress = await hypervisorFactory.getHypervisor(token0Address, token1Address, FeeAmount.MEDIUM)
+        hypervisor = (await ethers.getContractAt('Hypervisor', hypervisorAddress)) as Hypervisor
 
-        //await hypervisorFactory.createHypervisor(token0Address, token1Address, FeeAmount.MEDIUM,-1800, 1800, -600, 0)
-        //const hypervisorAddress = await hypervisorFactory.getHypervisor(token0Address, token1Address, FeeAmount.MEDIUM)
-        //hypervisor = (await ethers.getContractAt('Hypervisor', hypervisorAddress)) as Hypervisor
-
-        //factory = (await ethers.getContractAt('UniswapV3Factory', uniswapV3Factory)) as UniswapV3Factory
-        //const poolAddress = await factory.getPool(token0Address, token1Address, FeeAmount.MEDIUM)
-        //uniswapPool = (await ethers.getContractAt('IUniswapV3Pool', poolAddress)) as IUniswapV3Pool
+        factory = (await ethers.getContractAt('UniswapV3Factory', uniswapV3Factory)) as UniswapV3Factory
+        const poolAddress = await factory.getPool(token0Address, token1Address, FeeAmount.MEDIUM)
+        uniswapPool = (await ethers.getContractAt('IUniswapV3Pool', poolAddress)) as IUniswapV3Pool
     })
 
-
     it('allows for swaps on ethusdt pair', async () => {
-        //expect(uniswapPool.address).to.equal(token0Address)
+        // sanity check ethusdt pool address
+        let ethusdtMainnetPool = '0x4e68Ccd3E89f51C3074ca5072bbAC773960dFa36'
+        expect(uniswapPool.address).to.equal(ethusdtMainnetPool)
     })
 })
