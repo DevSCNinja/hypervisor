@@ -67,6 +67,6 @@ describe('ETHUSDT Hypervisor', () => {
         console.log("usdt: " + usdtBalance.toString() + " weth: " + weth9Balance.toString())
 
         await hypervisor.deposit(100000000, 1000, owner.address)
-        await hypervisor.rebalance(19140, 19740, 19440, 19500, owner.address, 500)
+        await hypervisor.rebalance(19140, 19740, 19440, 19500, owner.address, -500)
     })
 })
