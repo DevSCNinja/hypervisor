@@ -14,6 +14,10 @@ To trigger a rebalance, run:
 
 `npx hardhat rebalance`
 
+#### Fork Test
+
+`npm run test`
+
 ## Inventory Risk Management (TODO)
 
 - introduce swap functionality to rebalance in order to halt impermenant loss
