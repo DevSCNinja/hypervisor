@@ -300,13 +300,13 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
 
         if (amount0Delta > 0) {
             if (payer == address(this)) {
-                token0.transfer(msg.sender, uint256(amount0Delta));
+                token0.safeTransfer(msg.sender, uint256(amount0Delta));
             } else {
                 token0.safeTransferFrom(payer, msg.sender, uint256(amount0Delta));
             }
         } else if (amount1Delta > 0) {
             if (payer == address(this)) {
-                token1.transfer(msg.sender, uint256(amount1Delta));
+                token1.safeTransfer(msg.sender, uint256(amount1Delta));
             } else {
                 token1.safeTransferFrom(payer, msg.sender, uint256(amount1Delta));
             }

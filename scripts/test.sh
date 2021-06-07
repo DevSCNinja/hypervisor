@@ -4,4 +4,4 @@ if [ ! -d "$(pwd)/artifacts" ]; then
   hardhat compile
 fi
 
-hardhat test --network forking test/usdt.test.ts
+hardhat test --network hardhat test/usdt.test.ts
