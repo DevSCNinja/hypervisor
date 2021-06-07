@@ -2,7 +2,6 @@
 
 pragma solidity 0.7.6;
 
-import "hardhat/console.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/math/SignedSafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -85,9 +84,9 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
             pool.burn(limitLower, limitUpper, 0);
         }
 
-        int24 currentTick = currentTick();
-        uint160 sqrtPrice = TickMath.getSqrtRatioAtTick(currentTick);
-        uint256 price = uint256(sqrtPrice).mul(uint256(sqrtPrice)).mul(1e18) >> (96 * 2);
+        uint160 sqrtPrice = TickMath.getSqrtRatioAtTick(currentTick());
+        uint256 priceSquared = uint256(sqrtPrice).mul(uint256(sqrtPrice));
+        uint256 price = FullMath.mulDiv(priceSquared, 1e18, 2**(96 * 2));
 
         (uint256 pool0, uint256 pool1) = getTotalAmounts();
 
@@ -384,8 +383,8 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
             );
     }
 
-    function currentTick() public view returns (int24 currentTick) {
-        (, currentTick, , , , , ) = pool.slot0();
+    function currentTick() public view returns (int24 tick) {
+        (, tick, , , , , ) = pool.slot0();
     }
 
     function _uint128Safe(uint256 x) internal pure returns (uint128) {

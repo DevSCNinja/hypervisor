@@ -80,6 +80,6 @@ describe('ETHUSDT Hypervisor', () => {
         await usdc.approve(usdcEthHypervisor.address, ethers.utils.parseEther('1000000'))
         await weth9.approve(usdcEthHypervisor.address, ethers.utils.parseEther('1000000'))
 
-        //await usdcEthHypervisor.deposit(10000, 0, owner.address)
+        await usdcEthHypervisor.deposit(10000, 0, owner.address)
     })
 })
