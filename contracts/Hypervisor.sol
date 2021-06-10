@@ -147,12 +147,14 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
         emit Withdraw(from, to, shares, amount0, amount1);
     }
 
-    // @param _baseLower
-    // @param _baseUpper
-    // @param _limitLower
-    // @param _limitUpper
-    // @param feeRecipient
-    // @param swapQuantity
+    // @param _baseLower The lower tick of the base position
+    // @param _baseUpper The upper tick of the base position
+    // @param _limitLower The lower tick of the limit position
+    // @param _limitUpper The upper tick of the limit position
+    // @param feeRecipient Address of recipient of 10% of earned fees since last rebalance
+    // @param swapQuantity Quantity of tokens to swap; if quantity is positive,
+    // `swapQuantity` token0 are swaped for token1, if negative, `swapQuantity`
+    // token1 is swaped for token0
     function rebalance(
         int24 _baseLower,
         int24 _baseUpper,
@@ -325,8 +327,8 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
         }
     }
 
-    // @return total0
-    // @return total1
+    // @return total0 Quantity of token0 in both positions and unused in the Hypervisor
+    // @return total1 Quantity of token1 in both positions and unused in the Hypervisor
     function getTotalAmounts() public view override returns (uint256 total0, uint256 total1) {
         (, uint256 base0, uint256 base1) = getBasePosition();
         (, uint256 limit0, uint256 limit1) = getLimitPosition();
@@ -334,9 +336,11 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
         total1 = token1.balanceOf(address(this)).add(base1).add(limit1);
     }
 
-    // @return liquidity
-    // @return amount0
-    // @return amount1
+    // @return liquidity Amount of total liquidity in the base position
+    // @return amount0 Estimated amount of token0 that could be collected by
+    // burning the base position
+    // @return amount1 Estimated amount of token1 that could be collected by
+    // burning the base position
     function getBasePosition()
         public
         view
@@ -353,9 +357,11 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
         liquidity = positionLiquidity;
     }
 
-    // @return liquidity
-    // @return amount0
-    // @return amount1
+    // @return liquidity Amount of total liquidity in the limit position
+    // @return amount0 Estimated amount of token0 that could be collected by
+    // burning the limit position
+    // @return amount1 Estimated amount of token1 that could be collected by
+    // burning the limit position
     function getLimitPosition()
         public
         view
@@ -404,7 +410,7 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
             );
     }
 
-    // @return tick
+    // @return tick Uniswap pool's current price tick
     function currentTick() public view returns (int24 tick) {
         (, tick, , , , , ) = pool.slot0();
     }
@@ -414,13 +420,13 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
         return uint128(x);
     }
 
-    // @param _maxTotalSupply
+    // @param _maxTotalSupply The maximum liquidity token supply the contract allows
     function setMaxTotalSupply(uint256 _maxTotalSupply) external onlyOwner {
         maxTotalSupply = _maxTotalSupply;
     }
 
-    // @param _deposit0Max
-    // @param _deposit1Max
+    // @param _deposit0Max The maximum amount of token0 allowed in a deposit
+    // @param _deposit1Max The maximum amount of token1 allowed in a deposit
     function setDepositMax(uint256 _deposit0Max, uint256 _deposit1Max) external onlyOwner {
         deposit0Max = _deposit0Max;
         deposit1Max = _deposit1Max;

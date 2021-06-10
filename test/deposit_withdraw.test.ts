@@ -641,4 +641,8 @@ describe('ETHUSDT Hypervisor', () => {
 
     it('handles deposit / withdrawal from pools of different balances with swapping', async () => {
     })
+
+    // ARB via instant deposit/withdrawl of funds unlike pool makeup
+    it('does not suffer from arb attemps', async () => {
+    })
 })
