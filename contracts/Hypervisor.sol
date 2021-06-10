@@ -64,6 +64,10 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
         deposit1Max = uint256(-1);
     }
 
+    // @param deposit0 Amount of token0 transfered from sender to Hypervisor
+    // @param deposit1 Amount of token0 transfered from sender to Hypervisor
+    // @param to Address to which liquidity tokens are minted
+    // @return shares Quantity of liquidity tokens minted as a result of deposit
     function deposit(
         uint256 deposit0,
         uint256 deposit1,
@@ -108,6 +112,11 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
         require(maxTotalSupply == 0 || totalSupply() <= maxTotalSupply, "maxTotalSupply");
     }
 
+    // @param shares Number of liquidity tokens to redeem as pool assets
+    // @param to Address to which redeemed pool assets are sent
+    // @param from Address from which liquidity tokens are sent
+    // @return amount0 Amount of token0 redeemed by the submitted liquidity tokens
+    // @return amount1 Amount of token1 redeemed by the submitted liquidity tokens
     function withdraw(
         uint256 shares,
         address to,
@@ -138,6 +147,12 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
         emit Withdraw(from, to, shares, amount0, amount1);
     }
 
+    // @param _baseLower
+    // @param _baseUpper
+    // @param _limitLower
+    // @param _limitUpper
+    // @param feeRecipient
+    // @param swapQuantity
     function rebalance(
         int24 _baseLower,
         int24 _baseUpper,
@@ -310,6 +325,8 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
         }
     }
 
+    // @return total0
+    // @return total1
     function getTotalAmounts() public view override returns (uint256 total0, uint256 total1) {
         (, uint256 base0, uint256 base1) = getBasePosition();
         (, uint256 limit0, uint256 limit1) = getLimitPosition();
@@ -317,6 +334,9 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
         total1 = token1.balanceOf(address(this)).add(base1).add(limit1);
     }
 
+    // @return liquidity
+    // @return amount0
+    // @return amount1
     function getBasePosition()
         public
         view
@@ -333,6 +353,9 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
         liquidity = positionLiquidity;
     }
 
+    // @return liquidity
+    // @return amount0
+    // @return amount1
     function getLimitPosition()
         public
         view
@@ -381,6 +404,7 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
             );
     }
 
+    // @return tick
     function currentTick() public view returns (int24 tick) {
         (, tick, , , , , ) = pool.slot0();
     }
@@ -390,10 +414,13 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
         return uint128(x);
     }
 
+    // @param _maxTotalSupply
     function setMaxTotalSupply(uint256 _maxTotalSupply) external onlyOwner {
         maxTotalSupply = _maxTotalSupply;
     }
 
+    // @param _deposit0Max
+    // @param _deposit1Max
     function setDepositMax(uint256 _deposit0Max, uint256 _deposit1Max) external onlyOwner {
         deposit0Max = _deposit0Max;
         deposit1Max = _deposit1Max;
