@@ -49,7 +49,7 @@ describe('Hypervisor', () => {
 
     beforeEach('deploy contracts', async () => {
         ({ token0, token1, token2, factory, router, nft, hypervisorFactory } = await loadFixture(hypervisorTestFixture))
-        await hypervisorFactory.createHypervisor(token0.address, token1.address, FeeAmount.MEDIUM,-1800, 1800, -600, 0)
+        await hypervisorFactory.createHypervisor(token0.address, token1.address, FeeAmount.MEDIUM)
         const hypervisorAddress = await hypervisorFactory.getHypervisor(token0.address, token1.address, FeeAmount.MEDIUM)
         hypervisor = (await ethers.getContractAt('Hypervisor', hypervisorAddress)) as Hypervisor
 
@@ -505,7 +505,7 @@ describe('ETHUSDT Hypervisor', () => {
 
     beforeEach('deploy contracts', async () => {
         ({ token0, token1, token2, factory, router, nft, hypervisorFactory } = await loadFixture(hypervisorTestFixture))
-        await hypervisorFactory.createHypervisor(token0.address, token1.address, FeeAmount.MEDIUM,-1800, 1800, -600, 0)
+        await hypervisorFactory.createHypervisor(token0.address, token1.address, FeeAmount.MEDIUM)
         const hypervisorAddress = await hypervisorFactory.getHypervisor(token0.address, token1.address, FeeAmount.MEDIUM)
         hypervisor = (await ethers.getContractAt('Hypervisor', hypervisorAddress)) as Hypervisor
 

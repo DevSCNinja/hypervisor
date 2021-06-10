@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Unlicense
+// SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity 0.7.6;
 
@@ -18,7 +18,10 @@ import "@uniswap/v3-periphery/contracts/libraries/LiquidityAmounts.sol";
 import "../interfaces/IVault.sol";
 import "../interfaces/IUniversalVault.sol";
 
-
+// @title Hypervisor
+// @notice A Uniswap V2-like interface with fungible liquidity to Uniswap V3
+// which allows for arbitrary liquidity provision: one-sided, lop-sided, and
+// balanced
 contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, ERC20 {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
@@ -42,13 +45,11 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
 
     uint256 constant public PRECISION = 1e36;
 
+    // @param _pool Uniswap V3 pool for which liquidity is managed
+    // @param _owner Owner of the Hypervisor
     constructor(
         address _pool,
-        address _owner,
-        int24 _baseLower,
-        int24 _baseUpper,
-        int24 _limitLower,
-        int24 _limitUpper
+        address _owner
     ) ERC20("Fungible Liquidity", "LIQ") {
         pool = IUniswapV3Pool(_pool);
         token0 = IERC20(pool.token0());
@@ -58,10 +59,6 @@ contract Hypervisor is IVault, IUniswapV3MintCallback, IUniswapV3SwapCallback, E
 
         owner = _owner;
 
-        baseLower =  _baseLower;
-        baseUpper =  _baseUpper;
-        limitLower =  _limitLower;
-        limitUpper =  _limitUpper;
         maxTotalSupply = 0; // no cap
         deposit0Max = uint256(-1);
         deposit1Max = uint256(-1);

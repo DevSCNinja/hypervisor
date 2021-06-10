@@ -25,11 +25,7 @@ contract HypervisorFactory is Ownable {
     function createHypervisor(
         address tokenA,
         address tokenB,
-        uint24 fee,
-        int24 _baseLower,
-        int24 _baseUpper,
-        int24 _limitLower,
-        int24 _limitUpper
+        uint24 fee
     ) external onlyOwner returns (address hypervisor) {
         require(tokenA != tokenB, 'SF: IDENTICAL_ADDRESSES'); // TODO: using PoolAddress library (uniswap-v3-periphery)
         (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
@@ -42,7 +38,7 @@ contract HypervisorFactory is Ownable {
             pool = uniswapV3Factory.createPool(token0, token1, fee);
         }
         hypervisor = address(
-            new Hypervisor{salt: keccak256(abi.encodePacked(token0, token1, fee, tickSpacing))}(pool, owner(), _baseLower, _baseUpper, _limitLower,_limitUpper)
+            new Hypervisor{salt: keccak256(abi.encodePacked(token0, token1, fee, tickSpacing))}(pool, owner())
         );
 
         getHypervisor[token0][token1][fee] = hypervisor;
