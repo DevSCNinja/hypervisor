@@ -2,6 +2,9 @@
 
 Visor Hypervisor active liquidity management contract.
 
+### Audit
+[REP-Hypervisor-2021-07-07.pdf](https://github.com/VisorFinance/hypervisor/blob/master/REP-Hypervisor-2021-07-07.pdf)
+
 ### Testing
 
 `npx hardhat test`
