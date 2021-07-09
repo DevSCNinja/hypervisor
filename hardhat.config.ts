@@ -3,7 +3,6 @@ import '@nomiclabs/hardhat-ethers'
 import '@nomiclabs/hardhat-etherscan'
 import '@nomiclabs/hardhat-waffle'
 import './scripts/copy-uniswap-v3-artifacts.ts'
-// import './tasks/hypervisor'
 import { parseUnits } from 'ethers/lib/utils'
 require('dotenv').config()
 const mnemonic = process.env.DEV_MNEMONIC || ''
@@ -20,13 +19,6 @@ export default {
             mnemonic,
           },
           gasPrice: parseUnits('130', 'gwei').toNumber(),
-        },
-        bsc: {
-          url: 'https://bsc-dataseed1.binance.org',
-          accounts: {
-            mnemonic,
-          },
-          // gasPrice: parseUnits('130', 'gwei').toNumber(),
         },
         mainnet: {
           url: 'https://mainnet.infura.io/v3/' + process.env.INFURA_ID,
