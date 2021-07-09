@@ -1,4 +1,5 @@
-// SPDX-License-Identifier: BUSL-1.1
+// SPDX-License-Identifier: Unlicense
+
 pragma solidity 0.7.6;
 
 interface IVault {
