@@ -45,23 +45,6 @@ contract Admin {
         IHypervisor(_hypervisor).rebalance(_baseLower, _baseUpper, _limitLower, _limitUpper, _feeRecipient, swapQuantity);
     }
 
-    function emergencyWithdraw(
-        address _hypervisor,
-        IERC20 token,
-        uint256 amount
-    ) external onlyAdmin {
-        IHypervisor(_hypervisor).emergencyWithdraw(token, amount);
-    }
-
-    function emergencyBurn(
-        address _hypervisor,
-        int24 tickLower,
-        int24 tickUpper,
-        uint128 liquidity
-    ) external onlyAdmin {
-        IHypervisor(_hypervisor).emergencyBurn(tickLower, tickUpper, liquidity);
-    }
-
     function transferAdmin(address newAdmin) external onlyAdmin {
         admin = newAdmin;
     }
