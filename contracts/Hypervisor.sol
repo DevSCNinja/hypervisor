@@ -15,8 +15,8 @@ import "@uniswap/v3-core/contracts/libraries/TickMath.sol";
 import "@uniswap/v3-core/contracts/libraries/FullMath.sol";
 import "@uniswap/v3-periphery/contracts/libraries/LiquidityAmounts.sol";
 
-import "../interfaces/IVault.sol";
-import "../interfaces/IUniversalVault.sol";
+import "./interfaces/IVault.sol";
+import "./interfaces/IUniversalVault.sol";
 
 // @title Hypervisor
 // @notice A Uniswap V2-like interface with fungible liquidity to Uniswap V3

@@ -38,6 +38,7 @@
     "mocha": "^7.2.0",
     "prettier": "^2.2.1",
     "prettier-plugin-solidity": "*",
+    "solc-0.7": "npm:solc@^0.7.6",
     "solhint": "^3.3.4",
     "solhint-plugin-prettier": "^0.0.5",
     "ts-node": "^8.10.2",
